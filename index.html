@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#14532d"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Manajemen Karu"/>
+  <title>Manajemen Karu RSUD Merauke</title>
+  <script src="config.js"></script>
+
+
+  <!-- Typography: Plus Jakarta Sans (Headings) & Inter (Body/Labels) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin=""/>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin=""/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'"/><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"/></noscript>
+  
+  <!-- Icons -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" onload="this.onload=null;this.rel='stylesheet'"/><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/></noscript>
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'"/><noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/></noscript>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json"/>
+
+  <!-- Libraries -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  
+
+  <!-- Tailwind Configuration matching Stitch Design System -->
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#14532d",
+            "primary-container": "#166534",
+            "navy-deep": "#166534",
+            "navy-interactive": "#15803d",
+            "navy-action": "#16a34a",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#bbf7d0",
+            secondary: "#006a61",
+            "secondary-container": "#86f2e4",
+            "on-secondary-container": "#006f66",
+            "clinical-teal": "#0d9488",
+            "teal-dark": "#0f766e",
+            "teal-tint": "#f0fdfa",
+            "kpc-blue": "#3b82f6",
+            "knc-green": "#22c55e",
+            "ktc-yellow": "#eab308",
+            "ktd-red": "#ef4444",
+            "sentinel-purple": "#a855f7",
+            "status-approved-bg": "#dcfce7",
+            "status-approved-text": "#16a34a",
+            "status-pending-bg": "#fef3c7",
+            "status-pending-text": "#d97706",
+            "surface-app": "#f1f5f9",
+            "surface-card": "#ffffff",
+            "surface-row-alt": "#f8fafc",
+            "surface-rca-bg": "#fffbeb",
+            "surface-rca-border": "#fde68a",
+            "surface-container-low": "#f0fdf4",
+            "surface-container-high": "#dcfce7",
+            "surface-container-highest": "#bbf7d0",
+            "border-base": "#cbd5e1",
+            "border-subtle": "#e2e8f0",
+            "border-form": "#d1d5db",
+            "text-primary": "#1f2937",
+            "text-secondary": "#475569",
+            "text-muted": "#6b7280",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            error: "#ba1a1a"
+          },
+          fontFamily: {
+            sans: ["Inter", "sans-serif"],
+            display: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom Scrollbar & Utility */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Print Stylesheet for Official Physical Audit Sheet */
+    @media print {
+      body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+      header, nav, #top-banner, #filter-toolstrip, #preview-footer-actions, .no-print { display: none !important; }
+      #printableAuditSheet, #printableAuditSheet *:not(.hidden):not(.hidden *) { visibility: visible !important; }
+      #printableAuditSheet .hidden, #printableAuditSheet .hidden * { display: none !important; visibility: hidden !important; }
+      #printableAuditSheet {
+        position: absolute; left: 0; top: 0; width: 100% !important; margin: 0 !important; padding: 0 !important;
+        box-shadow: none !important; border: none !important;
+      }
+      img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #printableAuditSheet #kop-surat { display: flex !important; visibility: visible !important; break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #printableAuditSheet #kop-surat img { display: block !important; }
+    }
+
+
+    /* ===== Cetak PDF Dashboard + Monitoring (kop di setiap halaman) ===== */
+    #print-report { display: none; }
+    @page dashpage { size: A4 landscape; margin: 8mm 10mm; }
+    @media print {
+      body.print-dash > *:not(#print-report) { display: none !important; }
+      body.print-dash { display: block !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+      body.print-dash #print-report { display: block !important; page: dashpage; color: #0f172a; font-family: Inter, Arial, sans-serif; }
+      #print-report, #print-report * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #print-report table.pr-table { width: 100%; border-collapse: collapse; }
+      #print-report thead { display: table-header-group; }   /* kop berulang di tiap halaman */
+      #print-report tfoot { display: table-footer-group; }
+      #print-report tr { break-inside: avoid; page-break-inside: avoid; }
+      #print-report td, #print-report th { vertical-align: top; }
+      #print-report .pr-kop { display: flex; align-items: center; gap: 12px; border-bottom: 3px double #14532d; padding: 0 0 6px 0; margin-bottom: 8px; }
+      #print-report .pr-kop img { height: 46px; width: 46px; object-fit: contain; }
+      #print-report .pr-kop .t1 { font-size: 15px; font-weight: 800; color: #14532d; line-height: 1.2; }
+      #print-report .pr-kop .t2 { font-size: 10px; color: #475569; }
+      #print-report .pr-kop .t3 { font-size: 12px; font-weight: 700; margin-top: 2px; }
+      #print-report .pr-kop .meta { margin-left: auto; text-align: right; font-size: 9.5px; color: #475569; line-height: 1.45; }
+      #print-report .pr-block { padding: 0 0 10px 0; }
+      #print-report .pr-block img { width: 100%; height: auto; display: block; }
+      #print-report .pr-sec { font-size: 12px; font-weight: 800; color: #14532d; border-bottom: 1px solid #cbd5e1; padding: 2px 0 4px; margin: 0 0 6px; }
+      #print-report .pr-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      #print-report .pr-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; break-inside: avoid; }
+      #print-report .pr-card h4 { font-size: 10px; font-weight: 800; text-transform: uppercase; margin: 0 0 4px; }
+      #print-report table.pr-mon th { background: #14532d !important; color: #fff !important; font-size: 9.5px; text-align: left; padding: 5px 6px; border: 1px solid #14532d; }
+      #print-report table.pr-mon td.d { font-size: 9.5px; padding: 4px 6px; border: 1px solid #cbd5e1; }
+      #print-report table.pr-mon tbody tr:nth-child(even) td.d { background: #f1f5f9 !important; }
+      #print-report .pr-pill { display: inline-block; padding: 1px 7px; border-radius: 9999px; font-size: 9px; font-weight: 700; }
+      #print-report .pr-note { font-size: 9px; color: #64748b; margin-top: 6px; }
+      /* blok matriks, keterangan & grafik: ukuran tetap agar muat satu halaman dan tidak terpotong */
+      #print-report .pr-block > div, #print-report .pr-block > div > div { break-inside: avoid; page-break-inside: avoid; }
+      #print-report .pr-block .h-64 { height: 250px !important; }
+      #print-report .pr-block .h-64 img { width: 100%; height: 250px; object-fit: contain; }
+      #print-report .pr-block .h-56 { height: 220px !important; }
+      #print-report #matriks-keterangan { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
+      #print-report #matriks-risiko { min-width: 0 !important; }
+      #print-report .overflow-x-auto { overflow: visible !important; }
+      #print-report table { break-inside: avoid; page-break-inside: avoid; }
+      #print-report .shadow-sm { box-shadow: none !important; }
+    }
+
+
+    /* ===== Cetak formulir kosong (manual): lembar pelaporan & investigasi sederhana ===== */
+    #print-blank { display: none; }
+    @page blankpage { size: A4 portrait; margin: 12mm 14mm; }
+    @media print {
+      body.print-blank > *:not(#print-blank) { display: none !important; }
+      body.print-blank { display: block !important; background: #fff !important; padding: 0 !important; margin: 0 !important; }
+      body.print-blank #print-blank { display: block !important; page: blankpage; color: #0f172a; font-family: Inter, Arial, sans-serif; font-size: 11px; line-height: 1.4; }
+      #print-blank, #print-blank * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #print-blank .bf-kop { display: flex; align-items: center; gap: 12px; border-bottom: 3px double #000; padding-bottom: 5px; margin-bottom: 8px; }
+      #print-blank .bf-kop img { height: 56px; width: 56px; object-fit: contain; flex-shrink: 0; }
+      #print-blank .bf-kop .c { flex: 1; text-align: center; line-height: 1.25; }
+      #print-blank .bf-kop .k1 { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #475569; text-transform: uppercase; }
+      #print-blank .bf-kop .k2 { font-size: 15px; font-weight: 800; color: #14532d; text-transform: uppercase; }
+      #print-blank .bf-kop .k3 { font-size: 10.5px; font-weight: 700; color: #0d9488; }
+      #print-blank .bf-kop .k4 { font-size: 9px; color: #475569; }
+      #print-blank .bf-title { text-align: center; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 4px 0 2px; }
+      #print-blank .bf-sub { text-align: center; font-size: 10px; color: #475569; margin-bottom: 8px; }
+      #print-blank .bf-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 10.5px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 5px 8px; margin-bottom: 6px; }
+      #print-blank .bf-sec { font-weight: 800; text-transform: uppercase; color: #14532d; background: #f1f5f9 !important; border: 1px solid #e2e8f0; border-radius: 3px; padding: 3px 8px; margin: 10px 0 4px; break-after: avoid; page-break-after: avoid; }
+      #print-blank .bf-row { display: grid; grid-template-columns: 38% 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid #e2e8f0; break-inside: avoid; page-break-inside: avoid; }
+      #print-blank .bf-q { font-weight: 600; color: #334155; }
+      #print-blank .bf-q b { color: #b91c1c; }
+      #print-blank .bf-line { border-bottom: 1px dotted #475569; height: 16px; }
+      #print-blank .bf-box { border: 1px solid #94a3b8; border-radius: 3px; min-height: 64px; }
+      #print-blank .bf-box.tall { min-height: 110px; }
+      #print-blank .bf-opt { display: inline-block; margin: 0 12px 3px 0; white-space: nowrap; }
+      #print-blank .bf-cb { display: inline-block; width: 10px; height: 10px; border: 1.2px solid #1f2937; margin-right: 4px; vertical-align: -1px; }
+      #print-blank .bf-block { break-inside: avoid; page-break-inside: avoid; margin-bottom: 6px; }
+      #print-blank .bf-lbl { font-weight: 700; margin: 6px 0 3px; }
+      #print-blank .bf-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; text-align: center; margin-top: 16px; break-inside: avoid; page-break-inside: avoid; }
+      #print-blank .bf-sign .sp { height: 58px; }
+      #print-blank .bf-sign .ln { border-bottom: 1px solid #1f2937; margin: 0 14px 2px; height: 14px; }
+      #print-blank .bf-note { font-size: 9.5px; color: #475569; border-top: 1px solid #cbd5e1; margin-top: 12px; padding-top: 4px; }
+    }
+
+    .badge-kpc, .badge-kpcs { background-color: #3b82f6; color: #ffffff; }
+    .badge-knc { background-color: #22c55e; color: #ffffff; }
+    .badge-ktc { background-color: #eab308; color: #000000; }
+    .badge-ktd { background-color: #ef4444; color: #ffffff; }
+    .badge-sentinel { background-color: #a855f7; color: #ffffff; }
+
+    /* ===== Lembar cetak: isian formulir tersusun rapi (No. | Pertanyaan | : | Jawaban) ===== */
+    #cetak-fields-container .cetak-sec { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 700; text-transform: uppercase; color: #14532d; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; margin-top: 12px; line-height: 1.35; break-after: avoid; page-break-after: avoid; }
+    #cetak-fields-container .cetak-sub { font-weight: 700; color: #1f2937; margin-top: 8px; padding-top: 4px; break-after: avoid; page-break-after: avoid; }
+    #cetak-fields-container .cetak-row { display: grid; grid-template-columns: 1.75rem 36% 0.75rem minmax(0, 1fr); align-items: start; padding: 5px 0; border-bottom: 1px solid #e2e8f0; line-height: 1.5; }
+    #cetak-fields-container .cetak-no { color: #64748b; font-weight: 600; font-variant-numeric: tabular-nums; }
+    #cetak-fields-container .cetak-q { color: #475569; font-weight: 600; padding-right: 10px; overflow-wrap: break-word; }
+    #cetak-fields-container .cetak-colon { color: #475569; font-weight: 600; text-align: center; }
+    #cetak-fields-container .cetak-a { color: #1f2937; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media screen and (max-width: 520px) {
+      #cetak-fields-container .cetak-row { grid-template-columns: 1.6rem minmax(0, 1fr); }
+      #cetak-fields-container .cetak-colon { display: none; }
+      #cetak-fields-container .cetak-a { grid-column: 2; }
+    }
+    @media print {
+      #printableAuditSheet #kop-surat, #printableAuditSheet section, #cetak-ttd-karu-sheet, #cetak-ttd-komite-sheet,
+      #cetak-fields-container .cetak-row, #cetak-rca-body { break-inside: avoid; page-break-inside: avoid; }
+      #printableAuditSheet h4, #cetak-fields-container .cetak-sec, #cetak-fields-container .cetak-sub { break-after: avoid; page-break-after: avoid; }
+    }
+    @media print {
+      #cetak-fields-container, #cetak-fields-container *,
+      #cetak-grading-karu, #cetak-regrading-komite, #cetak-jenis-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    /* ===== Perbaikan logo RSUD Merauke: layar, dashboard, dan hasil cetak ===== */
+    #app-header-logo,
+    #login-logo,
+    #form-header-logo,
+    #printableAuditSheet img[alt*="Logo"],
+    #print-report .pr-kop img {
+      object-fit: contain !important;
+      object-position: center center !important;
+      max-width: 100% !important;
+      height: auto;
+      background-color: transparent !important;
+      image-rendering: auto;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    #app-header-logo { width: 44px !important; height: 44px !important; flex: 0 0 44px; border-radius: 0 !important; padding: 0 !important; }
+    #login-logo { width: 80px !important; height: 80px !important; display: block; margin-left: auto; margin-right: auto; border-radius: 0 !important; padding: 0 !important; box-shadow: none !important; background: transparent !important; }
+    #form-header-logo { width: 64px !important; height: 64px !important; flex: 0 0 64px; display: block; }
+    #print-report .pr-kop img { width: 58px !important; height: 58px !important; flex: 0 0 58px; }
+    @media print {
+      #app-header-logo, #login-logo, #form-header-logo,
+      #printableAuditSheet img[alt*="Logo"], #print-report .pr-kop img {
+        display: block !important;
+        object-fit: contain !important;
+        object-position: center center !important;
+        background: #ffffff !important;
+        visibility: visible !important;
+      }
+      #printableAuditSheet #kop-surat img { max-width: 64px !important; max-height: 64px !important; width: auto; height: auto; }
+    }
+
+    /* ===== Blok tanda tangan lembar cetak: dua kolom selalu sama lebar & sejajar (terutama layar HP) ===== */
+    #cetak-ttd-karu-sheet .grid, #cetak-ttd-komite-sheet .grid { align-items: start; }
+    #cetak-ttd-karu-sheet .grid > div, #cetak-ttd-komite-sheet .grid > div {
+      min-width: 0; display: flex; flex-direction: column; align-items: center;
+    }
+    #cetak-ttd-karu-sheet .grid > div > *, #cetak-ttd-komite-sheet .grid > div > * { max-width: 100%; overflow-wrap: anywhere; }
+    #cetak-ttd-karu-sheet .h-16, #cetak-ttd-komite-sheet .h-16 { width: 100%; }
+    /* kotak area tanda tangan: tidak lagi dipatok 176px; mengecil mengikuti lebar kolom */
+    #cetak-ttd-karu-sheet .border-dashed, #cetak-ttd-komite-sheet .border-dashed { width: 100%; max-width: 11rem; text-align: center; padding: 0 4px; }
+    #cetak-ttd-karu-sheet .ttd-img, #cetak-ttd-komite-sheet .ttd-img { max-width: 100%; height: auto; }
+    @media screen and (max-width: 520px) {
+      #printableAuditSheet { padding: 18px; }
+      #cetak-ttd-karu-sheet .grid, #cetak-ttd-komite-sheet .grid { column-gap: 12px; }
+      /* judul peran & unit diberi tinggi sama (2 baris, rata bawah) supaya kotak & garis nama kedua kolom sejajar */
+      #cetak-ttd-karu-sheet .grid > div > p:nth-child(1), #cetak-ttd-komite-sheet .grid > div > p:nth-child(1) {
+        min-height: 2.5em; display: flex; align-items: flex-end; justify-content: center; line-height: 1.25; font-size: 11px;
+      }
+      #cetak-ttd-karu-sheet .grid > div > p:nth-child(2), #cetak-ttd-komite-sheet .grid > div > p:nth-child(2) {
+        min-height: 2.4em; display: flex; align-items: flex-start; justify-content: center; line-height: 1.2; font-size: 9px;
+      }
+      #cetak-ttd-karu-sheet .border-dashed, #cetak-ttd-komite-sheet .border-dashed { font-size: 9px; line-height: 1.2; height: 3.5rem; }
+      #cetak-ttd-karu-sheet .grid > div > p.underline, #cetak-ttd-komite-sheet .grid > div > p.underline {
+        min-height: 2.6em; font-size: 11px; line-height: 1.25; display: flex; align-items: flex-start; justify-content: center; text-align: center;
+      }
+      #cetak-ttd-karu-sheet .grid > div > p[id^="cetak-nip"], #cetak-ttd-komite-sheet .grid > div > p[id^="cetak-rca-nip"], #cetak-ttd-komite-sheet .grid > div > p[id="cetak-nip-ketua"] { font-size: 9px; }
+    }
+
+    /* RCA saja: perbaikan layar ponsel; layout desktop dan cetak tetap asli. */
+    @media screen and (max-width: 767px) {
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) {
+        min-width: 0;
+        max-width: 100%;
+      }
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) > .no-print {
+        align-items: stretch;
+      }
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) > .no-print > div,
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) > .no-print > div:first-child > div:last-child {
+        min-width: 0;
+        max-width: 100%;
+      }
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) > .no-print > div:first-child > div:last-child > div {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: start;
+      }
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) > .no-print > div:last-child {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
+      }
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) > .no-print > div:last-child > div {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        min-width: 0;
+      }
+      #tab-content-cetak:has(#cetak-rca-container:not(.hidden)) select {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+      }
+      #printableAuditSheet:has(#cetak-rca-container:not(.hidden)) {
+        min-width: 0;
+        padding: 16px;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+      }
+      #printableAuditSheet:has(#cetak-rca-container:not(.hidden)) * {
+        min-width: 0;
+        max-width: 100%;
+      }
+      #printableAuditSheet:has(#cetak-rca-container:not(.hidden)) #kop-surat > div:first-child {
+        flex-direction: column;
+      }
+      #printableAuditSheet:has(#cetak-rca-container:not(.hidden)) #documentWatermark > span {
+        font-size: 24px;
+      }
+      #printableAuditSheet:has(#cetak-rca-container:not(.hidden)) #cetak-ttd-komite-sheet .grid,
+      #cetak-rca-container:not(.hidden) .grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      #cetak-rca-container:not(.hidden) #cetak-rca-ttd {
+        gap: 24px;
+      }
+      #cetak-rca-container:not(.hidden) #cetak-rca-ttd > div {
+        break-inside: avoid;
+      }
+    }
+  
+    /* ===== Sidebar navigasi kiri ===== */
+    :root { --hdr-h: 88px; --sb-w: 232px; }
+    #nav-tabstrip { position: fixed; left: 0; top: var(--hdr-h); bottom: 0; width: var(--sb-w); z-index: 30; overflow-y: auto; }
+    #nav-tabstrip:not(.hidden) { display: flex; flex-direction: column; }
+    #jenis-list summary::-webkit-details-marker { display: none; }
+    #nav-hamburger { display: none; }
+    #nav-overlay { display: none; position: fixed; left: 0; right: 0; bottom: 0; top: var(--hdr-h); background: rgba(0,0,0,.4); z-index: 29; }
+    @media (min-width: 768px) {
+      body:has(#nav-tabstrip:not(.hidden)) main { padding-left: var(--sb-w); }
+    }
+    @media (max-width: 767px) {
+      #nav-tabstrip { transform: translateX(-100%); transition: transform .25s ease; box-shadow: 4px 0 18px rgba(0,0,0,.15); max-width: 85vw; }
+      #nav-tabstrip.open { transform: translateX(0); }
+      #nav-overlay.show { display: block; }
+      body:has(#nav-tabstrip:not(.hidden)) #nav-hamburger { display: flex; }
+    }
+    @media print {
+      #nav-tabstrip, #nav-overlay, #nav-hamburger { display: none !important; }
+      body:has(#nav-tabstrip) main { padding-left: 0 !important; }
+    }
+
+    /* ===== Menu bertab (accordion) di sidebar ===== */
+    .nav-sub:not(.hidden) { display: flex; }
+    .nav-chev { transition: transform .2s ease; }
+    .nav-grp-btn[aria-expanded="true"] .nav-chev { transform: rotate(180deg); }
+    .nav-grp-btn.is-active { background: rgba(20,83,45,.08); color: #14532d; }
+    /* ===== Modul Pelaporan Mutu (E-Mutu) ===== */
+
+    /* ---------- Tabel isian form ---------- */
+    table.ft { border-collapse: collapse; font-size: 11px; min-width: 100%; }
+    table.ft th, table.ft td { border: 1px solid #cbd5e1; padding: 3px 4px; vertical-align: middle; }
+    table.ft thead th { background: #f1f5f9; color: #334155; font-weight: 700; text-align: center; font-size: 10px; }
+    table.ft td.no { text-align: center; color: #64748b; width: 32px; }
+    table.ft td.calc { text-align: center; background: #f8fafc; font-weight: 700; min-width: 64px; }
+    table.ft td.ytc { text-align: center; width: 40px; min-width: 40px; }
+    table.ft input[type=text], table.ft input[type=number], table.ft input[type=date],
+    table.ft input[type=time], table.ft input[type=datetime-local], table.ft select {
+      width: 100%; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 4px; background: #fff;
+    }
+    table.ft input[type=text] { min-width: 130px; }
+    table.ft input[type=number] { min-width: 70px; }
+    table.ft input[type=date] { min-width: 118px; }
+    table.ft input[type=time] { min-width: 86px; }
+    table.ft input[type=datetime-local] { min-width: 160px; }
+    table.ft input:disabled, table.ft select:disabled { background: #f1f5f9; color: #64748b; }
+    .ytbtn { width: 28px; height: 24px; border: 1px dashed #cbd5e1; border-radius: 4px; color: #fff; font-size: 12px; line-height: 1; }
+    .ytbtn.on { border: 1px solid #0284c7; background: #0284c7; }
+    .ytbtn.on.neg { border-color: #e11d48; background: #e11d48; }
+    .ytbtn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ---------- Area cetak ---------- */
+    #printArea { display: none; }
+    #printArea { font-family: 'Times New Roman', Times, serif; color: #000; font-size: 10pt; }
+    #printArea .kop { text-align: center; line-height: 1.25; border-bottom: 3px double #000; padding-bottom: 6px; margin-bottom: 10px; }
+    #printArea .kop .k1 { font-size: 12pt; font-weight: 700; }
+    #printArea .kop .k2 { font-size: 14pt; font-weight: 700; }
+    #printArea .kop .k3 { font-size: 9pt; font-style: italic; }
+    #printArea h2 { text-align: center; font-size: 12pt; font-weight: 700; margin: 6px 0 8px; text-transform: uppercase; }
+    #printArea .infoline { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10pt; }
+    #printArea table { border-collapse: collapse; width: 100%; }
+    #printArea table.pt th, #printArea table.pt td { border: 1px solid #000; padding: 3px 4px; font-size: 9pt; vertical-align: middle; }
+    #printArea table.pt th { text-align: center; font-weight: 700; }
+    #printArea table.pt td.c { text-align: center; }
+    #printArea table.pt tr { break-inside: avoid; page-break-inside: avoid; }
+    #printArea table.pt thead { display: table-header-group; }
+    #printArea table.sum td { border: 1px solid #000; padding: 4px 6px; font-size: 9.5pt; }
+    #printArea .sign { display: flex; justify-content: space-between; margin-top: 18px; break-inside: avoid; page-break-inside: avoid; }
+    #printArea .sign > div { width: 42%; text-align: center; }
+    #printArea .sign .space { height: 60px; }
+    #printArea .lampiran { margin-top: 14px; break-inside: avoid; page-break-inside: avoid; }
+
+    
+    @media print {
+      body.em-printing { background: #fff !important; }
+      body.em-printing > header, body.em-printing > main, body.em-printing > aside, body.em-printing #nav-overlay,
+      body.em-printing .swal2-container { display: none !important; }
+      body.em-printing #printArea { display: block !important; }
+    }
+  </style>
+<style>
+    #tab-content-admin,#tab-content-admin>div{min-width:0;max-width:100%}
+    .admin-scroll{max-width:100%;max-height:calc(100vh - 300px);min-height:200px;overflow:auto;scroll-behavior:smooth;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+    .admin-scroll thead th{position:sticky;top:0;z-index:2;background:#f1f5f9;white-space:nowrap}
+    .admin-scroll td{word-break:break-word}
+    @media(max-width:767px){
+      .admin-scroll{max-height:calc(100vh - 230px)}
+      .rtable thead{display:none}
+      .rtable,.rtable tbody,.rtable tr,.rtable td{display:block;width:100%}
+      .rtable tr{width:auto;border:1px solid #e2e8f0;border-radius:12px;margin:8px;padding:6px 12px;background:#fff}
+      .rtable td{display:flex!important;gap:10px;justify-content:space-between;align-items:center;padding:6px 0!important;text-align:right!important;white-space:normal!important}
+      .rtable td::before{content:attr(data-label);flex:0 0 36%;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b}
+      .rtable td[data-label="Aksi"]{flex-wrap:wrap}
+      .rtable td[data-label="Aksi"]>div{justify-content:flex-end}
+    }
+  </style>
+<style>
+    @media print { header, aside, #nav-overlay, .no-print { display: none !important; } main { padding: 0 !important; } body { background: #fff !important; } #laporan-cetak > div { box-shadow: none !important; break-inside: avoid; } }
+    .nav-item:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #166534; outline-offset: 1px; }
+  </style>
+</head>
+<body class="bg-surface-app text-text-primary font-sans antialiased min-h-screen flex flex-col selection:bg-primary selection:text-white">
+<header class="fixed top-0 w-full z-40 bg-surface-card shadow-[0_1px_8px_rgba(0,0,0,0.06)] no-print">
+    <!-- Just Culture Institutional Pledge Banner -->
+    <div id="top-banner" class="bg-primary text-on-primary py-1 px-4 text-xs">
+      <div class="max-w-[1080px] mx-auto w-full flex items-center justify-between">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="material-symbols-outlined text-[15px] text-secondary-container shrink-0">verified_user</span>
+          <span class="text-[11px] font-semibold tracking-wide uppercase truncate">
+            Terintegrasi dengan Sistem KMKP: SOP, mutu, dan insiden keselamatan pasien dalam satu data.
+          </span>
+        </div>
+        <div class="hidden md:flex items-center gap-2 shrink-0">
+          <span class="inline-block w-2 h-2 rounded-full bg-knc-green animate-pulse"></span>
+          <span class="text-[10px] uppercase font-bold text-surface-container-high tracking-wider">Standar KARS & Permenkes RI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Application Header Bar -->
+    <div class="h-16 max-w-[1080px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-2 sm:gap-4">
+      <!-- Hospital Branding -->
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <button id="nav-hamburger" type="button" onclick="toggleSidebar()" aria-label="Buka menu" class="items-center justify-center w-9 h-9 rounded-lg text-primary hover:bg-surface-container-high shrink-0">
+          <span class="material-symbols-outlined text-[22px]">menu</span>
+        </button>
+        <img id="app-header-logo" decoding="async" onerror="this.style.visibility='hidden'" alt="Logo RSUD Merauke" class="h-11 w-11 object-contain ring-border-subtle shrink-0"
+             src="logo.png"/>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-display font-extrabold text-sm sm:text-base md:text-lg text-primary tracking-tight truncate">Manajemen Karu RSUD Merauke</span>
+            <span class="hidden sm:inline-block shrink-0 bg-teal-tint text-clinical-teal font-bold text-[10px] px-1.5 py-0.5 rounded uppercase border border-clinical-teal/20">v1.0</span>
+          </div>
+          <span class="text-[10px] sm:text-[11px] text-text-secondary leading-tight truncate">Alat kerja Kepala Ruangan terintegrasi KMKP</span>
+        </div>
+      </div>
+
+      <!-- User Session Controls (Shown when Authenticated) -->
+      <div id="user-header-controls" class="hidden items-center gap-2 sm:gap-3 shrink-0">
+        <button type="button" onclick="H(go,'notif')" class="relative w-9 h-9 rounded-lg text-primary hover:bg-surface-container-high flex items-center justify-center" aria-label="Notifikasi"><span class="material-symbols-outlined text-[22px]">notifications</span><span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 bg-red-600 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span></button>
+
+        <button onclick="H(go,'insiden')" class="bg-primary hover:bg-navy-interactive text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+          <span class="material-symbols-outlined text-[16px]">add_circle</span>
+          <span class="hidden sm:inline">Lapor Insiden</span>
+        </button>
+
+        <div class="relative" id="profile-menu-wrap">
+          <button id="user-profile-btn" type="button" onclick="toggleProfileMenu(event)" aria-haspopup="true" aria-expanded="false" class="flex items-center gap-2 pl-2 border-l border-border-subtle hover:opacity-80 transition">
+            <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-primary/20">
+              <span id="user-initials">U</span>
+            </div>
+            <div class="hidden sm:flex flex-col text-left">
+              <span id="user-display-name" class="font-semibold text-xs text-text-primary leading-tight truncate max-w-[130px]">dr. Dewi Kartika</span>
+              <span id="user-display-role" class="text-[10px] text-clinical-teal font-medium">Komite Mutu</span>
+            </div>
+            <span class="material-symbols-outlined text-[18px] text-text-muted">expand_more</span>
+          </button>
+
+          <!-- Dropdown Profile Menu -->
+          <div id="profile-dropdown" class="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-border-subtle py-1.5 hidden z-50">
+            <div class="px-3 py-2 border-b border-border-subtle">
+              <p class="text-xs font-bold text-text-primary" id="dropdown-user-name">Pengguna</p>
+              <p class="text-[10px] text-text-muted" id="dropdown-user-room">Ruangan: -</p>
+            </div>
+            <button type="button" onclick="closeProfileMenu(); H(changePassword)" class="w-full text-left px-3 py-2 text-xs text-text-primary hover:bg-surface-container-low flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-navy-interactive">key</span>
+              <span>Ganti Kata Sandi</span>
+            </button>
+            <button type="button" onclick="closeProfileMenu(); H(logout)" class="w-full text-left px-3 py-2 text-xs text-error hover:bg-error-container/30 flex items-center gap-2 border-t border-border-subtle">
+              <span class="material-symbols-outlined text-[16px]">logout</span>
+              <span>Keluar (Logout)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </header>
+
+  <aside id="nav-tabstrip" class="hidden bg-surface-card border-r border-border-subtle no-print" aria-label="Menu utama">
+    <nav id="nav-list" class="flex flex-col gap-1 p-3 text-xs font-semibold"></nav>
+    <div class="mt-auto px-4 py-3 border-t border-border-subtle flex items-center gap-1 text-[11px] text-text-muted"><span class="material-symbols-outlined text-[14px]">link</span><span>Terhubung ke Sistem KMKP</span></div>
+  </aside>
+  <div id="nav-overlay" onclick="closeSidebar()" class="no-print"></div>
+  <div id="loading-spinner" class="hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50 flex items-center justify-center no-print">
+    <div class="bg-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-border-subtle">
+      <div class="w-6 h-6 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-xs font-semibold text-text-primary">Memproses...</span>
+    </div>
+  </div>
+
+  <main class="flex-grow w-full pt-28 pb-12">
+    <div class="max-w-[1080px] mx-auto px-4">
+      <section id="view-auth" class="max-w-md mx-auto my-8">
+        <div class="bg-surface-card rounded-2xl shadow-xl border border-border-subtle overflow-hidden">
+          <div class="bg-gradient-to-r from-primary via-navy-deep to-primary-container p-6 text-white text-center">
+            <img id="login-logo" decoding="async" onerror="this.style.visibility='hidden'" alt="Logo RSUD Merauke" class="mx-auto w-20 h-20 object-contain mb-3" src="logo.png"/>
+            <h2 class="font-display font-extrabold text-lg tracking-tight">Manajemen Karu RSUD Merauke</h2>
+            <p class="text-xs text-surface-container-high mt-0.5">Alat kerja Kepala Ruangan terintegrasi KMKP</p>
+          </div>
+          <div class="p-6">
+            <form id="form-login" class="space-y-4" novalidate>
+              <div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="login-username">Username</label>
+                <div class="relative"><span class="material-symbols-outlined absolute left-3 top-2.5 text-text-muted text-[18px]">person</span>
+                <input type="text" id="login-username" required autocomplete="username" placeholder="Username Sistem KMKP" class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border-form focus:outline-none focus:ring-2 focus:ring-primary"></div></div>
+              <div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="login-password">Password</label>
+                <div class="relative"><span class="material-symbols-outlined absolute left-3 top-2.5 text-text-muted text-[18px]">lock</span>
+                <input type="password" id="login-password" required autocomplete="current-password" placeholder="Password Sistem KMKP" class="w-full pl-9 pr-10 py-2 text-xs rounded-lg border border-border-form focus:outline-none focus:ring-2 focus:ring-primary">
+                <button type="button" onclick="togglePasswordVisibility('login-password')" aria-label="Tampilkan password" class="absolute right-3 top-2.5 text-text-muted hover:text-text-primary"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div></div>
+              <p id="login-error" role="alert" class="text-xs text-red-600 min-h-[1rem]"></p>
+              <div class="p-2.5 rounded-lg bg-surface-container-low text-[11px] text-text-secondary flex items-start gap-2"><span class="material-symbols-outlined text-clinical-teal text-[16px] shrink-0 mt-0.5">link</span><span>Gunakan akun yang sama dengan Sistem KMKP. Pendaftaran akun dan reset password dilakukan di Sistem KMKP.</span></div>
+              <button type="submit" class="w-full py-2.5 px-4 bg-primary hover:bg-navy-interactive text-white text-xs font-bold rounded-lg shadow-md transition-all active:scale-95 flex items-center justify-center gap-2" style="color:#fff"><span class="material-symbols-outlined text-[16px]">login</span><span>Masuk ke Aplikasi</span></button>
+            </form>
+          </div>
+        </div>
+      </section>
+      <section id="view-app" class="hidden"><div id="view"></div></section>
+    </div>
+  </main>
+  <script>
+'use strict';
+/* ===== Manajemen Karu RSUD Merauke - halaman depan. Semua data lewat API Karu (GAS); KMKP diakses lewat gerbang API itu. ===== */
+const API = String(window.KARU_API_URL || '').trim();
+const S = { token: null, user: null, unit: '', units: [], tab: 'dash' };
+const $ = id => document.getElementById(id);
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const WRITE = () => ['Karu', 'Admin'].indexOf(S.user.role) >= 0;
+const VIEWALL = () => ['Admin', 'Komite', 'KetuaKomite', 'Manajemen', 'Direktur'].indexOf(S.user.role) >= 0;
+const PMKP = () => ['Admin', 'Komite', 'KetuaKomite'].indexOf(S.user.role) >= 0;
+const U = () => (VIEWALL() && S.unit) ? S.unit : '';
+const pad2 = n => String(n).padStart(2, '0');
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+const bln = () => today().slice(0, 7);
+const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const fmtD = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : '-'; };
+const ROLE_LABEL = { Staf: 'Staf Pelapor', Karu: 'Kepala Ruangan', Komite: 'Komite Mutu', KetuaKomite: 'Ketua Komite', Manajemen: 'Manajemen RS', Direktur: 'Direktur RS', TU: 'Hukum / TU', Admin: 'Administrator' };
+
+/* ---------- Komunikasi dengan API ---------- */
+let busy = 0;
+function loading(on) { busy += on ? 1 : -1; const e = $('loading-spinner'); if (e) e.classList.toggle('hidden', busy <= 0); }
+async function call(fn, args, quiet) {
+  loading(true);
+  try {
+    if (!/^https?:\/\//.test(API)) throw new Error('URL API belum diatur. Isi KARU_API_URL pada file config.js.');
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error || 'Gagal menghubungi server.');
+    const res = j.result;
+    if (res && res.success === false) { if (res.code === 'AUTH') { endSession(true); const e = new Error('AUTH'); e.auth = true; throw e; } throw new Error(res.message || 'Gagal.'); }
+    return res;
+  } catch (e) { if (!e.auth && !quiet) { toast(e.message, 'error'); e.toasted = true; } throw e; } finally { loading(false); }
+}
+const A = (fn, ...a) => call(fn, [S.token].concat(a));
+const AQ = (fn, ...a) => call(fn, [S.token].concat(a), true);
+function H(f, ...a) { Promise.resolve().then(() => f(...a)).catch(e => { if (e && !e.toasted && !e.auth) { console.error(e); toast('Terjadi kesalahan: ' + ((e && e.message) || e), 'error'); } }); }   // galat API sudah jadi toast; galat tak terduga dilaporkan
+
+/* ---------- Komponen tampilan ---------- */
+function toast(m, t) { const e = document.createElement('div'); e.className = 'fixed top-20 right-3 z-[70] max-w-xs px-4 py-2 rounded-lg text-xs font-semibold shadow-lg text-white ' + (t === 'error' ? 'bg-red-600' : 'bg-green-700'); e.setAttribute('role', 'status'); e.textContent = m; document.body.appendChild(e); setTimeout(() => e.remove(), 4000); }
+function dlg(title, body, o) {
+  o = o || {};
+  return new Promise(res => {
+    const w = document.createElement('div'); w.className = 'fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-3 no-print';
+    w.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl w-full ${o.wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[90vh] flex flex-col" role="dialog"><div class="px-5 py-3 border-b border-border-subtle flex items-center justify-between gap-2"><h3 class="font-bold text-sm text-primary">${esc(title)}</h3><button type="button" data-x aria-label="Tutup" class="text-text-muted text-2xl leading-none">&times;</button></div><div class="p-5 overflow-y-auto text-xs" data-b>${body}</div><div class="px-5 py-3 border-t border-border-subtle flex justify-end gap-2" data-f></div></div>`;
+    document.body.appendChild(w);
+    const done = v => { w.remove(); res(v); }, f = w.querySelector('[data-f]');
+    const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'px-4 py-2 rounded-lg text-xs font-semibold border border-border-form'; b2.textContent = o.ok === false ? 'Tutup' : 'Batal'; b2.onclick = () => done(null); f.appendChild(b2);
+    w.querySelector('[data-x]').onclick = () => done(null);
+    if (o.ok !== false) { const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-white'; b1.style.color = '#fff'; b1.textContent = o.ok || 'Simpan';
+      b1.onclick = async () => {
+        let v; try { v = o.collect ? o.collect(w) : true; } catch (e) { toast(e.message, 'error'); return; }
+        if (v === false) return; if (!o.save) { done(v); return; }
+        b1.disabled = true; b2.disabled = true;
+        try { const r = await o.save(v); done(r === undefined ? true : r); }
+        catch (e) { if (e && e.auth) { w.remove(); res(null); return; } if (!e.toasted) toast(e.message, 'error'); b1.disabled = false; b2.disabled = false; }
+      }; f.appendChild(b1); }
+    if (o.open) o.open(w);
+  });
+}
+const IN = 'w-full px-3 py-2 text-xs rounded-lg border border-border-form bg-white focus:outline-none focus:ring-2 focus:ring-primary';
+function fld(f, v) {
+  const id = 'f_' + f.k, val = v == null ? '' : v; let inp;
+  if (f.t === 'select') inp = `<select id="${id}" class="${IN}">${f.o.map(o => `<option value="${esc(o[0])}" ${String(o[0]) === String(val) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
+  else if (f.t === 'textarea') inp = `<textarea id="${id}" rows="${f.rows || 3}" class="${IN}">${esc(val)}</textarea>`;
+  else if (f.t === 'checkbox') inp = `<label class="flex items-center gap-2"><input id="${id}" type="checkbox" ${val === true || val === 'true' ? 'checked' : ''}> ${esc(f.h || 'Ya')}</label>`;
+  else inp = `<input id="${id}" type="${f.t || 'text'}" value="${esc(val)}" ${f.min != null ? 'min="' + f.min + '"' : ''} ${f.step ? 'step="' + f.step + '"' : ''} class="${IN}">`;
+  return `<div class="mb-3"><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="${id}">${esc(f.l)}${f.r ? ' *' : ''}</label>${inp}</div>`;
+}
+function gather(w, fields) { const o = {}; fields.forEach(f => { const e = w.querySelector('#f_' + f.k); o[f.k] = f.t === 'checkbox' ? e.checked : e.value.trim(); if (f.r && o[f.k] === '') throw new Error(f.l + ' wajib diisi.'); }); return o; }
+const formDlg = (title, fields, init, o) => dlg(title, fields.map(f => fld(f, (init || {})[f.k])).join(''), Object.assign({ collect: w => gather(w, fields) }, o || {}));
+const confirmDlg = m => dlg('Konfirmasi', `<p class="text-sm">${esc(m)}</p>`, { ok: 'Ya, lanjutkan' });
+const card = (t, inner, x) => `<div class="bg-surface-card rounded-2xl border border-border-subtle shadow-sm p-4 ${x || ''}">${t ? `<h3 class="font-bold text-sm text-text-primary mb-3">${t}</h3>` : ''}${inner}</div>`;
+const badge = (t, c) => `<span class="inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-bold ${c || 'bg-slate-100 text-slate-700'}">${esc(t)}</span>`;
+const empty = t => `<p class="text-xs text-text-muted text-center py-6">${esc(t)}</p>`;
+const BTN = (l, on, k) => `<button type="button" onclick="${on}" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap ${k === 'p' ? 'bg-primary' : k === 'd' ? 'border border-red-300 text-red-600' : 'border border-primary text-primary'}" ${k === 'p' ? 'style="color:#fff"' : ''}>${l}</button>`;
+const tbl = (cols, rows) => rows.length ? `<div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="bg-surface-container-low text-text-secondary">${cols.map(c => `<th class="p-2 font-bold whitespace-nowrap">${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr class="border-t border-border-subtle">${cols.map(c => `<td class="p-2 align-top">${c[1](r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : empty('Belum ada data.');
+const kpi = (ic, c, v, l, s) => `<div class="bg-surface-card rounded-2xl border border-border-subtle p-4 flex items-center gap-3 shadow-sm"><span class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:${c}1a;color:${c}"><span class="material-symbols-outlined text-[24px]">${ic}</span></span><div class="min-w-0"><p class="text-2xl font-extrabold text-text-primary leading-none">${esc(v)}</p><p class="text-xs font-semibold text-text-secondary mt-1">${esc(l)}</p><p class="text-[10px] text-text-muted truncate">${esc(s || '')}</p></div></div>`;
+const tabsBar = (list, cur, fn) => `<div class="flex flex-wrap gap-1 mb-3">${list.map(t => `<button type="button" onclick="H(${fn},'${t[0]}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${t[0] === cur ? 'bg-primary' : 'border border-border-form text-text-secondary'}" ${t[0] === cur ? 'style="color:#fff"' : ''}>${esc(t[1])}</button>`).join('')}</div>`;
+function head(title, extra) {
+  let u = '';
+  if (VIEWALL()) u = `<select id="unit-sel" onchange="H(setUnit,this.value)" class="${IN} !w-auto max-w-[220px]" aria-label="Pilih ruangan">${S.units.map(n => `<option ${n === S.unit ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
+  else u = `<span class="text-[11px] bg-surface-container-low rounded-full px-3 py-1 text-text-secondary">Ruangan: <b>${esc(S.user.ruangan || '-')}</b></span>`;
+  return `<div class="flex flex-wrap items-center justify-between gap-2 mb-4"><h2 class="font-display font-extrabold text-lg text-primary">${esc(title)}</h2><div class="flex flex-wrap items-center gap-2">${extra || ''}${u}</div></div>`;
+}
+const setUnit = v => { S.unit = v; return go(S.tab); };
+const view = h => { $('view').innerHTML = h; };
+const readOnlyNote = () => WRITE() ? '' : `<p class="text-[11px] text-text-muted mb-3">Mode lihat saja: hanya Kepala Ruangan yang dapat mengubah data ruangan.</p>`;
+const monthInput = (id, v, fn) => `<input id="${id}" type="month" value="${v}" onchange="H(${fn},this.value)" class="${IN} !w-auto" aria-label="Bulan">`;
+
+/* ---------- Sesi, login, navigasi ---------- */
+const MENU = [['dash', 'Dashboard', 'dashboard'], ['jadwal', 'Jadwal Dinas', 'calendar_month'], ['pegawai', 'Pegawai', 'groups'], ['sensus', 'Sensus & BOR', 'bed'], ['wisn', 'Beban Kerja (WISN)', 'calculate'],
+  ['supervisi', 'Supervisi Klinis', 'fact_check'], ['audit', 'Audit Ruangan', 'checklist'], ['indikator', 'Indikator Mutu', 'monitoring'], ['insiden', 'Insiden (IKP)', 'report'], ['sop', 'SOP Ruangan', 'description'],
+  ['rtl', 'Rencana Tindak Lanjut', 'task_alt'], ['pelatihan', 'Pelatihan & STR', 'school'], ['dokumen', 'Dokumen Ruangan', 'folder_open'], ['laporan', 'Laporan & Ekspor', 'summarize'], ['notif', 'Notifikasi', 'notifications']];
+const allowed = t => (['Staf', 'TU'].indexOf(S.user.role) < 0) || ['dash', 'jadwal', 'insiden', 'sop', 'notif'].indexOf(t) >= 0;
+function buildNav() {
+  $('nav-list').innerHTML = MENU.filter(m => allowed(m[0])).map(m => `<button type="button" id="nav-${m[0]}" onclick="H(go,'${m[0]}')" class="nav-item w-full px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2.5 text-left text-[13px] leading-tight text-text-secondary hover:text-primary hover:bg-surface-container-high"><span class="material-symbols-outlined text-[18px] shrink-0">${m[2]}</span><span class="min-w-0 flex-1 whitespace-normal break-words">${m[1]}</span></button>`).join('');
+}
+function toggleSidebar() { $('nav-tabstrip').classList.toggle('open'); $('nav-overlay').classList.toggle('show'); }
+function closeSidebar() { $('nav-tabstrip').classList.remove('open'); $('nav-overlay').classList.remove('show'); }
+function toggleProfileMenu(e) { e.stopPropagation(); $('profile-dropdown').classList.toggle('hidden'); }
+function closeProfileMenu() { $('profile-dropdown').classList.add('hidden'); }
+document.addEventListener('click', e => { const d = $('profile-dropdown'); if (d && !d.classList.contains('hidden') && !$('profile-menu-wrap').contains(e.target)) closeProfileMenu(); });
+function togglePasswordVisibility(id) { const e = $(id); e.type = e.type === 'password' ? 'text' : 'password'; }
+function showLogin(msg) { $('view-auth').classList.remove('hidden'); $('view-app').classList.add('hidden'); $('nav-tabstrip').classList.add('hidden'); $('user-header-controls').classList.add('hidden'); $('user-header-controls').classList.remove('flex'); $('login-error').textContent = msg || ''; }
+function endSession(expired) { document.querySelectorAll('[role=dialog]').forEach(d => d.parentNode && d.parentNode.remove()); S.token = null; S.user = null; try { localStorage.removeItem('karu_token'); } catch (e) {} showLogin(expired ? 'Sesi berakhir. Silakan masuk kembali.' : ''); }
+async function handleLogin(ev) {
+  ev.preventDefault(); $('login-error').textContent = '';
+  try { const r = await call('apiAuthenticateUser', [$('login-username').value.trim(), $('login-password').value], true); S.token = r.token; S.user = r.user; try { localStorage.setItem('karu_token', r.token); } catch (e) {} $('login-password').value = ''; await startApp(); }
+  catch (e) { if (!e.auth) $('login-error').textContent = e.message; }
+}
+async function startApp() {
+  const u = S.user; $('view-auth').classList.add('hidden'); $('view-app').classList.remove('hidden'); $('nav-tabstrip').classList.remove('hidden');
+  const c = $('user-header-controls'); c.classList.remove('hidden'); c.classList.add('flex');
+  $('user-initials').textContent = (u.nama || u.username || 'U').trim().charAt(0).toUpperCase(); $('user-display-name').textContent = u.nama || u.username; $('user-display-role').textContent = ROLE_LABEL[u.role] || u.role;
+  $('dropdown-user-name').textContent = u.nama || u.username; $('dropdown-user-room').textContent = 'Ruangan: ' + (u.ruangan || '-');
+  S.units = []; S.unit = '';
+  if (VIEWALL()) { try { const r = await AQ('getMasterUnits'); S.units = (Array.isArray(r) ? r : []).map(x => x.nama_unit).filter(Boolean); } catch (e) { S.units = []; } S.unit = S.units.indexOf(u.ruangan) >= 0 ? u.ruangan : (S.units[0] || ''); }
+  buildNav(); await go('dash'); refreshBell();
+}
+async function refreshBell() { try { const r = await AQ('apiKrNotifikasi', U()); const b = $('notif-badge'); b.textContent = r.jumlah; b.classList.toggle('hidden', !r.jumlah); } catch (e) {} }
+async function logout() { if (S.token) { try { await AQ('apiLogout'); } catch (e) {} } endSession(false); }
+async function changePassword() {
+  const r = await formDlg('Ganti Kata Sandi', [{ k: 'lama', l: 'Kata sandi lama', t: 'password', r: 1 }, { k: 'baru', l: 'Kata sandi baru (min. 8 karakter)', t: 'password', r: 1 }], null,
+    { save: v => { if (v.baru.length < 8) throw new Error('Kata sandi baru minimal 8 karakter.'); return A('apiChangePassword', v.lama, v.baru); } });
+  if (r) toast(r.message || 'Kata sandi diganti.');
+}
+async function go(tab) {
+  if (!S.user) return; if (!allowed(tab) || !MODS[tab]) tab = 'dash'; S.tab = tab; closeSidebar();
+  document.querySelectorAll('.nav-item').forEach(b => { const on = b.id === 'nav-' + tab; b.classList.toggle('bg-primary/10', on); b.classList.toggle('text-primary', on); b.classList.toggle('font-bold', on); });
+  view(`<p class="text-xs text-text-muted py-10 text-center">Memuat...</p>`);
+  try { await MODS[tab](); } catch (e) { if (!e.auth) view(card('', `<p class="text-xs text-red-600">${esc(e.message)}</p>`)); }
+  window.scrollTo(0, 0);
+}
+const MODS = {};
+
+/* ---------- Dashboard ---------- */
+MODS.dash = async function () {
+  const [d, j, n] = await Promise.all([A('apiKrDashboard', U()), A('apiKrJadwalHariIni', today(), U()), AQ('apiKrNotifikasi', U()).catch(() => ({ items: [], jumlah: 0 }))]);
+  const sh = j.shift, rs = d.insiden_rs, mx = rs ? Math.max.apply(null, rs.tren.map(t => t.jumlah).concat([1])) : 1;
+  const forma = Object.keys(sh).filter(k => k !== 'L').map(k => `<div class="mb-2"><p class="text-[11px] font-bold text-text-secondary">${esc(sh[k].nama)} <span class="font-normal">${esc(sh[k].mulai)}${sh[k].mulai ? '–' : ''}${esc(sh[k].selesai)}</span></p><p class="text-xs">${j.formasi[k].length ? j.formasi[k].map(p => esc(p.nama)).join(', ') : '<span class="text-text-muted">-</span>'}</p></div>`).join('');
+  view(head('Dashboard Ruangan') + `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${kpi('groups', '#166534', d.pegawai, 'Pegawai aktif', d.unit)}${kpi('badge', '#0369a1', j.dinas_hari_ini, 'Dinas hari ini', fmtD(today()))}${kpi('bed', '#7c3aed', d.bor && d.bor.bor_persen != null ? d.bor.bor_persen + '%' : '-', 'BOR bulan ini', d.bor ? 'TT: ' + d.bor.tempat_tidur : 'belum ada sensus')}${kpi('fact_check', '#d97706', d.supervisi.rata_skor != null ? d.supervisi.rata_skor + '%' : '-', 'Skor supervisi', d.supervisi.jumlah + ' supervisi bulan ini')}${kpi('monitoring', '#0f766e', d.indikator.terkirim_bulan_ini, 'Indikator terkirim', d.indikator.hari_terisi + ' hari terisi')}${kpi('task_alt', '#dc2626', d.rtl ? d.rtl.terbuka : 0, 'RTL terbuka', (d.rtl ? d.rtl.terlambat : 0) + ' terlambat')}${kpi('description', '#166534', d.sop ? d.sop.total : '-', 'SOP ruangan', (d.sop ? d.sop.kadaluarsa : 0) + ' perlu ditinjau')}${kpi('report', '#b91c1c', rs ? rs.total : '-', 'Insiden seluruh RS', rs ? 'ruangan Anda: ' + rs.total_ruangan_anda : 'data KMKP')}</div>
+  <div class="grid lg:grid-cols-2 gap-4 mt-4">${card('Formasi dinas hari ini', forma)}${card('Notifikasi (' + n.jumlah + ')', n.items.length ? n.items.slice(0, 5).map(x => `<button type="button" onclick="H(go,'${esc(x.tab)}')" class="w-full text-left py-2 border-t first:border-t-0 border-border-subtle"><p class="text-xs font-semibold ${x.tingkat === 'bahaya' ? 'text-red-600' : x.tingkat === 'peringatan' ? 'text-amber-700' : 'text-text-primary'}">${esc(x.judul)}</p><p class="text-[11px] text-text-muted">${esc(x.detail)}</p></button>`).join('') : empty('Tidak ada pemberitahuan.'))}</div>
+  ${rs ? card('Laporan insiden seluruh rumah sakit (6 bulan terakhir)', `<div class="flex items-end gap-2 h-32">${rs.tren.map(t => `<div class="flex-1 flex flex-col items-center justify-end h-full"><span class="text-[10px] font-bold">${t.jumlah}</span><div class="w-full rounded-t bg-primary" style="height:${Math.round(t.jumlah / mx * 100)}%;min-height:2px"></div><span class="text-[9px] text-text-muted mt-1">${esc(t.bulan)}</span></div>`).join('')}</div>`, 'mt-4') : ''}`);
+};
+
+/* ---------- Jadwal dinas ---------- */
+const SHC = { P: 'bg-sky-100 text-sky-800', S: 'bg-amber-100 text-amber-800', M: 'bg-indigo-100 text-indigo-800', L: 'bg-slate-200 text-slate-700' };
+let JD = null;
+MODS.jadwal = async function (b) {
+  b = typeof b === 'string' && /^\d{4}-\d{2}$/.test(b) ? b : (JD && JD.bulan) || bln();
+  const [pg, jd, rk] = await Promise.all([A('apiKrPegawaiList', U()), A('apiKrJadwalList', b, U()), A('apiKrJadwalRekap', b, U())]);
+  const cells = {}; jd.items.forEach(i => { cells[i.tanggal + '|' + i.pegawai_id] = i.shift; });
+  JD = { bulan: b, peg: pg.items.filter(p => p.aktif), cells: cells, orig: Object.assign({}, cells), shift: jd.shift, rekap: rk.items }; drawJadwal();
+};
+function drawJadwal() {
+  const b = JD.bulan, n = new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)), 0).getDate(), dirty = Object.keys(JD.cells).some(k => JD.cells[k] !== JD.orig[k]) || Object.keys(JD.orig).some(k => !(k in JD.cells));
+  const days = Array.from({ length: n }, (_, i) => i + 1), dow = d => new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)) - 1, d).getDay();
+  const grid = JD.peg.length ? `<div class="overflow-x-auto"><table class="text-[11px] border-collapse"><thead><tr><th class="p-1 text-left sticky left-0 bg-white z-10 min-w-[130px]">Pegawai</th>${days.map(d => `<th class="p-1 w-8 text-center ${dow(d) === 0 ? 'text-red-600' : ''}">${d}<br><span class="font-normal text-[9px]">${'MSSRKJS'.charAt(dow(d))}</span></th>`).join('')}</tr></thead><tbody>${JD.peg.map(p => `<tr class="border-t border-border-subtle"><td class="p-1 sticky left-0 bg-white z-10 font-semibold whitespace-nowrap">${esc(p.nama)}</td>${days.map(d => { const k = b + '-' + pad2(d), s = JD.cells[k + '|' + p.id] || ''; return `<td class="p-0.5 text-center"><button type="button" ${WRITE() ? `onclick="cycShift('${k}','${p.id}')"` : 'disabled'} aria-label="${esc(p.nama)} tanggal ${d}" class="w-7 h-7 rounded text-[10px] font-bold ${s ? SHC[s] : 'border border-dashed border-border-form text-text-muted'}">${s || '·'}</button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>` : empty('Tambahkan pegawai terlebih dahulu di menu Pegawai.');
+  const leg = Object.keys(JD.shift).map(k => `<span class="mr-3">${badge(k, SHC[k])} ${esc(JD.shift[k].nama)} ${esc(JD.shift[k].mulai)}${JD.shift[k].mulai ? '–' : ''}${esc(JD.shift[k].selesai)}</span>`).join('');
+  view(head('Jadwal Dinas', monthInput('jd-bulan', b, 'MODS.jadwal') + (WRITE() ? BTN('Tukar Dinas', 'H(tukarDinas)') + BTN('Simpan Perubahan' + (dirty ? ' •' : ''), 'H(simpanJadwal)', 'p') : '')) + readOnlyNote() + card('', `<p class="text-[11px] mb-2">${leg}</p><p class="text-[10px] text-text-muted mb-2">${WRITE() ? 'Ketuk sel untuk mengganti shift: kosong → P → S → M → L → kosong. Lalu tekan Simpan Perubahan.' : ''}</p>${grid}`) + card('Rekap jam kerja ' + BLN[Number(b.slice(5, 7)) - 1] + ' ' + b.slice(0, 4), tbl([['Pegawai', r => esc(r.nama)], ['Pagi', r => r.P], ['Siang', r => r.S], ['Malam', r => r.M], ['Lepas', r => r.L], ['Total jam', r => `<b>${r.jam}</b>`]], JD.rekap), 'mt-4'));
+}
+function cycShift(tgl, pid) { const k = tgl + '|' + pid, o = ['', 'P', 'S', 'M', 'L'], n = o[(o.indexOf(JD.cells[k] || '') + 1) % o.length]; if (n) JD.cells[k] = n; else delete JD.cells[k]; drawJadwal(); }
+async function simpanJadwal() {
+  const en = []; Object.keys(JD.cells).forEach(k => { if (JD.cells[k] !== JD.orig[k]) { const p = k.split('|'); en.push({ tanggal: p[0], pegawai_id: p[1], shift: JD.cells[k] }); } });
+  Object.keys(JD.orig).forEach(k => { if (!(k in JD.cells)) { const p = k.split('|'); en.push({ tanggal: p[0], pegawai_id: p[1], shift: '' }); } });
+  if (!en.length) { toast('Tidak ada perubahan.'); return; }
+  for (let i = 0; i < en.length; i += 700) await A('apiKrJadwalSet', en.slice(i, i + 700));
+  toast('Jadwal tersimpan.'); await MODS.jadwal(JD.bulan);
+}
+async function tukarDinas() {
+  const po = JD.peg.map(p => [p.id, p.nama]), r = await formDlg('Tukar Dinas', [{ k: 'pegawai_a', l: 'Pegawai A', t: 'select', o: po }, { k: 'tanggal_a', l: 'Tanggal A', t: 'date', r: 1 }, { k: 'pegawai_b', l: 'Pegawai B', t: 'select', o: po }, { k: 'tanggal_b', l: 'Tanggal B', t: 'date', r: 1 }], { tanggal_a: today(), tanggal_b: today() }, { save: v => A('apiKrTukarDinas', v) });
+  if (!r) return; toast(r.message); await MODS.jadwal(JD.bulan);
+}
+
+/* ---------- Pegawai ---------- */
+let PG = [];
+const PEG_F = [{ k: 'nama', l: 'Nama lengkap', r: 1 }, { k: 'nip', l: 'NIP' }, { k: 'jabatan', l: 'Jabatan' }, { k: 'level_pk', l: 'Level PK', t: 'select', o: [['', '-'], ['PK I', 'PK I'], ['PK II', 'PK II'], ['PK III', 'PK III'], ['PK IV', 'PK IV'], ['PK V', 'PK V']] }, { k: 'aktif', l: 'Status', t: 'checkbox', h: 'Aktif' }];
+MODS.pegawai = async function () {
+  const r = await A('apiKrPegawaiList', U()); PG = r.items;
+  view(head('Pegawai Ruangan', WRITE() ? BTN('+ Tambah Pegawai', 'H(editPegawai)', 'p') : '') + readOnlyNote() + card('', tbl([['Nama', p => `<b>${esc(p.nama)}</b>`], ['NIP', p => esc(p.nip || '-')], ['Jabatan', p => esc(p.jabatan || '-')], ['PK', p => esc(p.level_pk || '-')], ['Status', p => badge(p.aktif ? 'Aktif' : 'Nonaktif', p.aktif ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600')], ['Aksi', p => WRITE() ? BTN('Ubah', `H(editPegawai,'${p.id}')`) + ' ' + BTN('Hapus', `H(hapusPegawai,'${p.id}')`, 'd') : '']], PG)));
+};
+async function editPegawai(id) { const cur = PG.find(p => p.id === id), r = await formDlg(cur ? 'Ubah Pegawai' : 'Tambah Pegawai', PEG_F, cur || { aktif: true }, { save: v => A('apiKrPegawaiSave', cur ? Object.assign(v, { id: id }) : v) }); if (!r) return; toast(r.message); await MODS.pegawai(); }
+async function hapusPegawai(id) { if (!(await confirmDlg('Hapus pegawai ini?'))) return; const r = await A('apiKrPegawaiDelete', id); toast(r.message); await MODS.pegawai(); }
+
+/* ---------- Sensus, DPJP, BOR ---------- */
+let SN = { tgl: '', dp: [], sn: null };
+MODS.sensus = async function (tgl, b) {
+  SN.tgl = /^\d{4}-\d{2}-\d{2}$/.test(tgl || '') ? tgl : (SN.tgl || today()); b = /^\d{4}-\d{2}$/.test(b || '') ? b : bln();
+  const [sn, bor, dp] = await Promise.all([A('apiKrSensusHari', SN.tgl, U()), A('apiKrBor', b, U()), A('apiKrDpjpList', U())]); SN.sn = sn; SN.dp = dp.items;
+  const per = {}; sn.per_dpjp.forEach(x => { per[x.dpjp_id] = x; });
+  view(head('Sensus Pasien, DPJP & BOR') + readOnlyNote() + `<div class="grid md:grid-cols-3 gap-3 mb-4">${kpi('bed', '#7c3aed', bor.bor_persen != null ? bor.bor_persen + '%' : '-', 'BOR ' + b, bor.tempat_tidur ? 'Tempat tidur: ' + bor.tempat_tidur : 'Tempat tidur belum diatur')}${kpi('calendar_today', '#0369a1', bor.hari_perawatan, 'Hari perawatan', bor.hari_ada_data + ' dari ' + bor.hari_periode + ' hari ada data')}${kpi('person', '#166534', sn.total_pasien, 'Pasien hari ini', sn.terisi_persen != null ? sn.terisi_persen + '% tempat tidur' : '')}</div>${!bor.lengkap && bor.hari_periode ? `<p class="text-[11px] text-amber-700 mb-3">Data sensus belum lengkap untuk semua hari; BOR bisa lebih rendah dari sebenarnya.</p>` : ''}
+  ${card('Sensus per DPJP', `<div class="flex flex-wrap items-center gap-2 mb-3"><input id="sn-tgl" type="date" value="${SN.tgl}" max="${today()}" onchange="H(MODS.sensus,this.value)" class="${IN} !w-auto" aria-label="Tanggal sensus">${WRITE() ? BTN('Atur Tempat Tidur', 'H(aturTT)') : ''}</div><p class="text-[11px] text-text-muted mb-2">Isi hanya KODE unik pasien (contoh: A001), tanpa nama.</p>` + tbl([['DPJP', d => `<b>${esc(d.nama)}</b><br><span class="text-text-muted">${esc(d.spesialis || '')}</span>`], ['Jumlah', d => per[d.id] ? per[d.id].jumlah : 0], ['Kode pasien', d => per[d.id] ? esc(per[d.id].kode.join(', ')) : '-'], ['Aksi', d => WRITE() ? BTN('Isi / Ubah', `H(isiSensus,'${d.id}')`) : '']], SN.dp.filter(d => d.aktif)))}
+  ${card('Daftar DPJP', (WRITE() ? `<div class="mb-3">${BTN('+ Tambah DPJP', 'H(editDpjp)', 'p')}</div>` : '') + tbl([['Nama', d => esc(d.nama)], ['Spesialis', d => esc(d.spesialis || '-')], ['Status', d => badge(d.aktif ? 'Aktif' : 'Nonaktif', d.aktif ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600')], ['Aksi', d => WRITE() ? BTN('Ubah', `H(editDpjp,'${d.id}')`) + ' ' + BTN('Hapus', `H(hapusDpjp,'${d.id}')`, 'd') : '']], SN.dp), 'mt-4')}`);
+};
+async function aturTT() { const r = await formDlg('Jumlah Tempat Tidur', [{ k: 'tempat_tidur', l: 'Jumlah tempat tidur ruangan', t: 'number', min: 0, r: 1 }], { tempat_tidur: SN.sn.tempat_tidur || '' }, { save: v => A('apiKrConfigSave', { tempat_tidur: v.tempat_tidur }) }); if (!r) return; toast(r.message); await MODS.sensus(SN.tgl); }
+async function isiSensus(id) { const d = SN.dp.find(x => x.id === id), cur = SN.sn.per_dpjp.find(x => x.dpjp_id === id), r = await formDlg('Sensus ' + fmtD(SN.tgl) + ' - ' + d.nama, [{ k: 'kode', l: 'Kode pasien (pisahkan dengan koma atau baris baru)', t: 'textarea', rows: 5 }], { kode: cur ? cur.kode.join(', ') : '' }, { save: v => A('apiKrSensusSave', { tanggal: SN.tgl, dpjp_id: id, kode: v.kode }) }); if (!r) return; toast(r.message); await MODS.sensus(SN.tgl); }
+const DP_F = [{ k: 'nama', l: 'Nama DPJP', r: 1 }, { k: 'spesialis', l: 'Spesialis' }, { k: 'aktif', l: 'Status', t: 'checkbox', h: 'Aktif' }];
+async function editDpjp(id) { const cur = SN.dp.find(d => d.id === id), r = await formDlg(cur ? 'Ubah DPJP' : 'Tambah DPJP', DP_F, cur || { aktif: true }, { save: v => A('apiKrDpjpSave', cur ? Object.assign(v, { id: id }) : v) }); if (!r) return; toast(r.message); await MODS.sensus(SN.tgl); }
+async function hapusDpjp(id) { if (!(await confirmDlg('Hapus DPJP ini?'))) return; const r = await A('apiKrDpjpDelete', id); toast(r.message); await MODS.sensus(SN.tgl); }
+
+/* ---------- Beban kerja (WISN) ---------- */
+let W = { pokok: [{ nama: '', waktu_menit: '', jumlah_tahun: '' }], penunjang: [], res: null };
+const wset = (g, i, k, v) => { W[g][i][k] = v; };
+function wRows(g, lbl) { return `<div class="mb-3"><p class="text-[11px] font-bold text-text-secondary uppercase mb-1">${lbl}</p>${W[g].map((r, i) => `<div class="grid grid-cols-12 gap-1 mb-1"><input class="${IN} col-span-6" placeholder="Nama kegiatan" value="${esc(r.nama)}" oninput="wset('${g}',${i},'nama',this.value)" aria-label="Nama kegiatan"><input class="${IN} col-span-3" type="number" min="0" placeholder="Menit/kegiatan" value="${esc(r.waktu_menit)}" oninput="wset('${g}',${i},'waktu_menit',this.value)" aria-label="Waktu menit"><input class="${IN} col-span-2" type="number" min="0" placeholder="Jml/tahun" value="${esc(r.jumlah_tahun)}" oninput="wset('${g}',${i},'jumlah_tahun',this.value)" aria-label="Jumlah per tahun"><button type="button" class="col-span-1 text-red-600 font-bold" onclick="wDel('${g}',${i})" aria-label="Hapus baris">&times;</button></div>`).join('')}${BTN('+ Baris', `wAdd('${g}')`)}</div>`; }
+const wAdd = g => { W[g].push({ nama: '', waktu_menit: '', jumlah_tahun: '' }); drawWisn(); };
+const wDel = (g, i) => { W[g].splice(i, 1); drawWisn(); };
+MODS.wisn = async function () { const r = await A('apiKrWisnList', U()); W.hist = r.items; drawWisn(); };
+function drawWisn() {
+  const f = (id, l, v) => `<div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="${id}">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="${IN}"></div>`, r = W.res;
+  view(head('Beban Kerja - Metode WISN') + card('Parameter waktu kerja tersedia', `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">${f('w-tahun', 'Tahun', new Date().getFullYear())}${f('w-hk', 'Hari kerja / tahun', 313)}${f('w-cuti', 'Cuti', 12)}${f('w-libur', 'Libur nasional', 14)}${f('w-latih', 'Pelatihan (hari)', 5)}${f('w-absen', 'Absen / sakit (hari)', 6)}${f('w-jam', 'Jam kerja / hari', 7)}${f('w-ada', 'Tenaga ada (kosong = otomatis)', '')}</div>` + wRows('pokok', 'Kegiatan pokok') + wRows('penunjang', 'Kegiatan penunjang (kelonggaran)') + `<div class="flex flex-wrap items-center gap-3"><label class="text-xs flex items-center gap-1"><input id="w-simpan" type="checkbox"> Simpan hasil ke riwayat</label>${BTN('Hitung Kebutuhan Tenaga', 'H(hitungWisn)', 'p')}</div>`)
+    + (r ? card('Hasil perhitungan', `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">${kpi('schedule', '#0369a1', r.waktu_kerja_tersedia_jam, 'Waktu kerja tersedia (jam)')}${kpi('groups', '#166534', r.kebutuhan_total, 'Kebutuhan tenaga', 'dibulatkan ' + r.kebutuhan_dibulatkan_atas)}${kpi('person', '#7c3aed', r.tenaga_ada, 'Tenaga ada', 'selisih ' + r.selisih)}${kpi('balance', r.status === 'Cukup' ? '#16a34a' : '#dc2626', r.rasio_wisn, 'Rasio WISN', r.status)}</div>` + tbl([['Kegiatan', k => esc(k.nama)], ['Beban (menit)', k => k.beban_menit], ['Kebutuhan', k => k.kebutuhan]], r.pokok.concat(r.penunjang)), 'mt-4') : '')
+    + card('Riwayat perhitungan', tbl([['Tahun', h => h.tahun], ['Kebutuhan', h => h.kebutuhan_total], ['Tenaga ada', h => h.tenaga_ada], ['Rasio', h => h.rasio_wisn], ['Status', h => badge(h.status, h.status === 'Cukup' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700')]], W.hist || []), 'mt-4'));
+}
+async function hitungWisn() {
+  const n = id => $(id).value, d = { unit: U(), tahun: n('w-tahun'), hari_kerja_tahun: n('w-hk'), cuti: n('w-cuti'), libur: n('w-libur'), pelatihan: n('w-latih'), absen: n('w-absen'), jam_kerja_hari: n('w-jam'), simpan: $('w-simpan').checked, pokok: W.pokok, penunjang: W.penunjang };
+  if (n('w-ada') !== '') d.tenaga_ada = n('w-ada'); W.res = await A('apiKrWisnHitung', d); if (d.simpan) W.hist = (await A('apiKrWisnList', U())).items; drawWisn();
+}
+
+/* ---------- Supervisi & Audit (checklist) ---------- */
+const CK = { sup: { tab: 'input' }, aud: { tab: 'input' } };
+function checklistHtml(t) { return t.butir.map((b, i) => `<div class="py-2 border-t border-border-subtle first:border-t-0"><p class="text-xs mb-1">${b.no}. ${esc(b.teks)}</p><div class="flex gap-4">${['Ya', 'Tidak', 'NA'].map(o => `<label class="text-xs flex items-center gap-1"><input type="radio" name="ck_${i}" value="${o}"> ${o}</label>`).join('')}</div></div>`).join(''); }
+function checklistVals(n) { const j = []; for (let i = 0; i < n; i++) { const e = document.querySelector(`input[name="ck_${i}"]:checked`); if (!e) throw new Error('Semua butir harus dinilai (Ya / Tidak / NA).'); j.push(e.value); } return j; }
+let SUP = { tpl: [], peg: [] };
+MODS.supervisi = async function (tab) {
+  CK.sup.tab = typeof tab === 'string' && tab ? tab : CK.sup.tab; const t = CK.sup.tab, tabs = [['input', 'Input Supervisi'], ['riwayat', 'Riwayat'], ['template', 'Template Checklist'], ['kepatuhan', 'Kepatuhan SOP']];
+  let body = '';
+  if (t === 'input') {
+    if (!WRITE()) body = card('', empty('Hanya Kepala Ruangan yang dapat mengisi supervisi. Lihat Riwayat dan Kepatuhan SOP.'));
+    else { const [pg, tp] = await Promise.all([A('apiKrPegawaiList', U()), A('apiKrTemplateList')]); SUP.peg = pg.items.filter(p => p.aktif); SUP.tpl = tp.items.filter(x => x.status === 'Disetujui');
+      body = !SUP.tpl.length ? card('', empty('Belum ada template checklist yang disetujui PMKP. Template dibuat dari SOP di tab Template Checklist.')) : card('Form supervisi', `<div class="grid md:grid-cols-3 gap-3 mb-3"><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="s-peg">Pegawai</label><select id="s-peg" class="${IN}">${SUP.peg.map(p => `<option value="${p.id}">${esc(p.nama)}</option>`).join('')}</select></div><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="s-tpl">SOP / template</label><select id="s-tpl" onchange="H(drawSupChk)" class="${IN}">${SUP.tpl.map(x => `<option value="${x.id}">${esc(x.judul)}</option>`).join('')}</select></div><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="s-tgl">Tanggal</label><input id="s-tgl" type="date" value="${today()}" max="${today()}" class="${IN}"></div></div><div id="s-chk"></div><div class="grid md:grid-cols-2 gap-3 mt-3"><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="s-cat">Catatan / umpan balik</label><textarea id="s-cat" rows="3" class="${IN}"></textarea></div><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="s-rtl">Rencana tindak lanjut</label><textarea id="s-rtl" rows="3" class="${IN}"></textarea><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1 mt-2" for="s-ulang">Jadwal supervisi ulang</label><input id="s-ulang" type="date" class="${IN}"></div></div><div class="mt-3">${BTN('Simpan Supervisi', 'H(simpanSup)', 'p')}</div>`); }
+  } else if (t === 'riwayat') { const b = CK.sup.bln || bln(), r = await A('apiKrSupList', { unit: U(), bulan: b }); body = card('Riwayat supervisi ' + b, `<div class="mb-3">${monthInput('sup-bln', b, 'supBln')}</div><p class="text-xs mb-2">Rata-rata skor: <b>${r.rata_skor != null ? r.rata_skor + '%' : '-'}</b></p>` + tbl([['Tanggal', s => fmtD(s.tanggal)], ['Pegawai', s => esc(s.pegawai_nama)], ['SOP', s => esc(s.judul)], ['Skor', s => badge(s.skor + '%', s.skor >= 85 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800')], ['Catatan / RTL', s => esc(s.catatan) + (s.rtl ? '<br><span class="text-text-muted">RTL: ' + esc(s.rtl) + '</span>' : '')]], r.items)); }
+  else if (t === 'template') { const r = await A('apiKrTemplateList'); body = card('Template checklist dari SOP', (PMKP() ? `<div class="mb-3">${BTN('+ Buat dari SOP', 'H(buatTemplate)', 'p')}</div>` : '<p class="text-[11px] text-text-muted mb-2">Template dibuat dan disetujui PMKP.</p>') + tbl([['SOP', x => esc(x.judul)], ['Butir', x => x.butir.length], ['Status', x => badge(x.status, x.status === 'Disetujui' ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-700')], ['Aksi', x => PMKP() ? ['Disetujui', 'Draft', 'Nonaktif'].filter(s => s !== x.status).map(s => BTN(s, `H(setTpl,'${x.id}','${s}')`)).join(' ') : '']], r.items)); }
+  else { const r = await A('apiKrKepatuhanSop', U()); body = card('Kepatuhan per SOP (rata-rata skor supervisi)', tbl([['SOP', x => esc(x.judul)], ['Jumlah supervisi', x => x.jumlah], ['Rata-rata skor', x => `<div class="flex items-center gap-2"><div class="w-24 h-2 rounded bg-slate-100"><div class="h-2 rounded ${x.rata_skor >= 85 ? 'bg-green-600' : 'bg-amber-500'}" style="width:${Math.min(100, x.rata_skor)}%"></div></div><b>${x.rata_skor}%</b></div>`]], r.items)); }
+  view(head('Supervisi Klinis') + tabsBar(tabs, t, 'MODS.supervisi') + body); if (t === 'input' && WRITE() && SUP.tpl.length) drawSupChk();
+};
+const supBln = v => { CK.sup.bln = v; return MODS.supervisi('riwayat'); };
+function drawSupChk() { const t = SUP.tpl.find(x => x.id === $('s-tpl').value); $('s-chk').innerHTML = t ? checklistHtml(t) : ''; }
+async function simpanSup() { const t = SUP.tpl.find(x => x.id === $('s-tpl').value); if (!$('s-peg').value) { toast('Pilih pegawai.', 'error'); return; } let jw; try { jw = checklistVals(t.butir.length); } catch (e) { toast(e.message, 'error'); return; }
+  const r = await A('apiKrSupSave', { pegawai_id: $('s-peg').value, template_id: t.id, tanggal: $('s-tgl').value, jawaban: jw, catatan: $('s-cat').value, rtl: $('s-rtl').value, jadwal_ulang: $('s-ulang').value }); toast(r.message); await MODS.supervisi('input'); }
+async function buatTemplate() {
+  const r = await A('apiSopLibrary'), ok = (r.items || []).filter(s => s.status === 'Approved' && s.isi && Array.isArray(s.isi.prosedur) && s.isi.prosedur.length);
+  if (!ok.length) { toast('Belum ada SOP Disetujui yang memiliki langkah prosedur.', 'error'); return; }
+  const x = await formDlg('Buat Template dari SOP', [{ k: 'sop', l: 'Pilih SOP', t: 'select', o: ok.map(s => [s.id, s.unit + ' - ' + s.judul]) }], null, { save: v => A('apiKrTemplateGenerate', v.sop) });
+  if (!x) return; toast(x.message); await MODS.supervisi('template');
+}
+async function setTpl(id, st) { const r = await A('apiKrTemplateSetStatus', id, st); toast(r.message); await MODS.supervisi('template'); }
+let AUD = { tpl: [] };
+MODS.audit = async function (tab) {
+  CK.aud.tab = typeof tab === 'string' && tab ? tab : CK.aud.tab; const t = CK.aud.tab, tabs = [['input', 'Input Audit'], ['riwayat', 'Riwayat'], ['template', 'Template Audit']]; let body = '';
+  if (t === 'input') {
+    if (!WRITE()) body = card('', empty('Hanya Kepala Ruangan yang dapat mengisi audit. Lihat Riwayat.'));
+    else { const tp = await A('apiKrAuditTemplateList'); AUD.tpl = tp.items.filter(x => x.status === 'Disetujui');
+      body = !AUD.tpl.length ? card('', empty('Belum ada template audit yang disetujui PMKP.')) : card('Form audit internal', `<div class="grid md:grid-cols-2 gap-3 mb-3"><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="a-tpl">Template audit</label><select id="a-tpl" onchange="H(drawAudChk)" class="${IN}">${AUD.tpl.map(x => `<option value="${x.id}">${esc(x.judul)}</option>`).join('')}</select></div><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="a-tgl">Tanggal</label><input id="a-tgl" type="date" value="${today()}" max="${today()}" class="${IN}"></div></div><div id="a-chk"></div><div class="grid md:grid-cols-2 gap-3 mt-3"><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="a-tem">Temuan</label><textarea id="a-tem" rows="3" class="${IN}"></textarea></div><div><label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="a-rtl">Rencana tindak lanjut</label><textarea id="a-rtl" rows="3" class="${IN}"></textarea></div></div><div class="mt-3">${BTN('Simpan Audit', 'H(simpanAud)', 'p')}</div>`); }
+  } else if (t === 'riwayat') { const b = CK.aud.bln || bln(), r = await A('apiKrAuditList', { unit: U(), bulan: b }); body = card('Riwayat audit ' + b, `<div class="mb-3">${monthInput('aud-bln', b, 'audBln')}</div><p class="text-xs mb-2">Rata-rata skor: <b>${r.rata_skor != null ? r.rata_skor + '%' : '-'}</b></p>` + tbl([['Tanggal', a => fmtD(a.tanggal)], ['Audit', a => esc(a.judul)], ['Skor', a => badge(a.skor + '%', a.skor >= 85 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800')], ['Temuan / RTL', a => esc(a.temuan) + (a.rtl ? '<br><span class="text-text-muted">RTL: ' + esc(a.rtl) + '</span>' : '')]], r.items)); }
+  else { const r = await A('apiKrAuditTemplateList'); AUD.all = r.items; body = card('Template audit internal ruangan', (PMKP() ? `<div class="mb-3">${BTN('+ Template Baru', 'H(editAudTpl)', 'p')}</div>` : '<p class="text-[11px] text-text-muted mb-2">Template dibuat dan disetujui PMKP.</p>') + tbl([['Judul', x => esc(x.judul)], ['Butir', x => x.butir.length], ['Status', x => badge(x.status, x.status === 'Disetujui' ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-700')], ['Aksi', x => PMKP() ? BTN('Ubah', `H(editAudTpl,'${x.id}')`) : '']], r.items)); }
+  view(head('Audit Internal Ruangan') + tabsBar(tabs, t, 'MODS.audit') + body); if (t === 'input' && WRITE() && AUD.tpl.length) drawAudChk();
+};
+const audBln = v => { CK.aud.bln = v; return MODS.audit('riwayat'); };
+function drawAudChk() { const t = AUD.tpl.find(x => x.id === $('a-tpl').value); $('a-chk').innerHTML = t ? checklistHtml(t) : ''; }
+async function simpanAud() { const t = AUD.tpl.find(x => x.id === $('a-tpl').value); let jw; try { jw = checklistVals(t.butir.length); } catch (e) { toast(e.message, 'error'); return; }
+  const r = await A('apiKrAuditSave', { template_id: t.id, tanggal: $('a-tgl').value, jawaban: jw, temuan: $('a-tem').value, rtl: $('a-rtl').value }); toast(r.message); await MODS.audit('input'); }
+async function editAudTpl(id) { const cur = (AUD.all || []).find(x => x.id === id), r = await formDlg(cur ? 'Ubah Template Audit' : 'Template Audit Baru', [{ k: 'judul', l: 'Judul audit', r: 1 }, { k: 'status', l: 'Status', t: 'select', o: [['Draft', 'Draft'], ['Disetujui', 'Disetujui'], ['Nonaktif', 'Nonaktif']] }, { k: 'butir', l: 'Butir audit (satu per baris)', t: 'textarea', rows: 8, r: 1 }], cur ? { judul: cur.judul, status: cur.status, butir: cur.butir.map(b => b.teks).join('\n') } : { status: 'Draft' }, { wide: true, save: v => A('apiKrAuditTemplateSave', cur ? Object.assign(v, { id: id }) : v) });
+  if (!r) return; toast(r.message); await MODS.audit('template'); }
+
+/* ---------- Indikator mutu ---------- */
+let IND = { b: '', ind: [], har: null };
+MODS.indikator = async function (b) {
+  IND.b = typeof b === 'string' && /^\d{4}-\d{2}$/.test(b) ? b : (IND.b || bln());
+  const [ind, har] = await Promise.all([A('apiKrIndikatorUnit', U()), A('apiKrHarianList', IND.b, U())]); IND.ind = ind.items; IND.har = har;
+  view(head('Indikator Mutu Ruangan', monthInput('ind-bln', IND.b, 'MODS.indikator')) + readOnlyNote() + card('', tbl([['Indikator', i => `<b>${esc(i.nama_indikator)}</b><br><span class="text-text-muted">${esc(i.kategori || '')}</span>`], ['Target', i => i.target_persen === '' ? '-' : (i.formula_tipe === 'le' ? '≤ ' : '≥ ') + i.target_persen + (i.mode_angka ? '' : '%')],
+    ['Num / Denum', i => { const r = har.rekap[i.id_indikator]; return r ? (i.mode_angka ? r.num : r.num + ' / ' + r.denum) : '-'; }], ['Capaian', i => { const r = har.rekap[i.id_indikator]; if (!r || (!i.mode_angka && r.denum <= 0)) return '-'; const t = i.target_persen === '' ? null : Number(i.target_persen), ok = t === null ? null : (i.formula_tipe === 'le' ? r.capaian <= t : r.capaian >= t); return badge(r.capaian + (i.mode_angka ? '' : '%'), ok === null ? '' : ok ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'); }],
+    ['KMKP', i => har.terkirim[i.id_indikator] ? badge(har.terkirim[i.id_indikator].status || 'Terkirim', 'bg-sky-100 text-sky-800') : badge('Belum kirim', 'bg-slate-200 text-slate-600')],
+    ['Aksi', i => BTN('Rincian', `H(rincianInd,'${i.id_indikator}')`) + (WRITE() ? ' ' + BTN('Isi Harian', `H(isiHarian,'${i.id_indikator}')`) + ' ' + BTN('Kirim ke KMKP', `H(kirimInd,'${i.id_indikator}')`, 'p') : '')]], IND.ind)));
+};
+async function isiHarian(id) {
+  const i = IND.ind.find(x => x.id_indikator === id), f = [{ k: 'tanggal', l: 'Tanggal', t: 'date', r: 1 }];
+  if (i.mode_angka) f.push({ k: 'num', l: 'Nilai / jumlah hari ini' + (i.numerator_desc ? ' (' + i.numerator_desc + ')' : ''), t: 'number', min: 0, r: 1 });
+  else f.push({ k: 'num', l: 'Numerator' + (i.numerator_desc ? ' (' + i.numerator_desc + ')' : ''), t: 'number', min: 0, r: 1 }, { k: 'denum', l: 'Denominator' + (i.denominator_desc ? ' (' + i.denominator_desc + ')' : ''), t: 'number', min: 0, r: 1 });
+  const r = await formDlg('Isi Harian: ' + i.nama_indikator, f, { tanggal: today() }, { save: v => A('apiKrHarianSave', { tanggal: v.tanggal, indikator_id: id, num: v.num, denum: i.mode_angka ? 0 : v.denum }) });
+  if (!r) return; toast(r.message); await MODS.indikator(IND.b);
+}
+async function rincianInd(id) { const r = IND.har.rekap[id], i = IND.ind.find(x => x.id_indikator === id); await dlg('Rincian harian: ' + i.nama_indikator, r ? tbl([['Tanggal', h => esc(IND.b + '-' + h[0])], ['Numerator', h => h[1]], ['Denominator', h => h[2]]], r.hari) : empty('Belum ada data harian bulan ini.'), { ok: false }); }
+async function kirimInd(id) { if (!(await confirmDlg('Kirim rekap bulan ' + IND.b + ' ke KMKP? Data akan tampil di Laporan Mutu Ruangan.'))) return; const r = await A('apiKrBulananKirim', { bulan: IND.b, indikator_id: id }); toast(r.message); await MODS.indikator(IND.b); }
+
+/* ---------- Insiden (IKP): formulir dari KMKP, daftar ruangan, grading Karu ---------- */
+let INS = { tab: 'lapor', q: [] };
+const GRAD = { Biru: 'bg-sky-100 text-sky-800', Hijau: 'bg-green-100 text-green-800', Kuning: 'bg-yellow-100 text-yellow-800', Merah: 'bg-red-100 text-red-700' };
+MODS.insiden = async function (tab) {
+  INS.tab = typeof tab === 'string' && tab ? tab : INS.tab; const t = INS.tab; let body = '';
+  if (t === 'lapor') {
+    const r = await A('apiGetFormQuestions'); INS.q = r.questions || [];
+    body = card('Formulir pelaporan insiden keselamatan pasien', `<p class="text-[11px] text-text-muted mb-3">Pelaporan bersifat non-punitif: tujuannya perbaikan sistem, bukan menyalahkan individu. Laporan tersimpan di KMKP. Laporan wajib dibuat paling lambat 2×24 jam setelah kejadian.</p><div id="ik-form">${INS.q.map((q, i) => qHtml(q, i)).join('')}</div><div class="mt-3">${BTN('Kirim Laporan', 'H(kirimIKP)', 'p')}</div>`);
+  } else {
+    const m = INS.m || 3, [d, tot] = await Promise.all([A('apiGetDashboardData', m), AQ('apiIntegrasiTotalInsiden').catch(() => null)]); INS.list = d.data || [];
+    body = (tot && tot.success ? `<div class="grid grid-cols-2 gap-3 mb-3">${kpi('report', '#b91c1c', tot.total, 'Total laporan insiden rumah sakit', 'dari KMKP')}${kpi('meeting_room', '#166534', tot.total_ruangan_anda, 'Laporan ruangan Anda', 'semua periode')}</div>` : '')
+      + card('Daftar laporan' + (VIEWALL() ? '' : ' ruangan'), `<div class="mb-3"><label class="text-xs mr-2" for="ik-m">Periode</label><select id="ik-m" onchange="H(ikPeriode,this.value)" class="${IN} !w-auto">${[1, 3, 6, 12].map(x => `<option value="${x}" ${x === m ? 'selected' : ''}>${x} bulan terakhir</option>`).join('')}</select></div>` + tbl([['Waktu', x => esc(x.timestamp)], ['Ruangan', x => esc(x.ruangan)], ['Jenis', x => badge(x.jenis_insiden, 'bg-slate-100 text-slate-700')], ['Grading', x => x.grading_karu ? badge(x.grading_karu, GRAD[x.grading_karu]) : '-'], ['Status', x => esc(x.status)], ['Aksi', x => BTN('Detail', `H(detailIKP,'${esc(x.id)}')`) + (S.user.role === 'Karu' && x.status === 'Menunggu Grading Karu' ? ' ' + BTN('Grading', `H(gradingIKP,'${esc(x.id)}')`, 'p') : '')]], INS.list));
+  }
+  view(head('Insiden Keselamatan Pasien') + tabsBar([['lapor', 'Lapor Insiden'], ['daftar', 'Daftar Laporan']], t, 'MODS.insiden') + body);
+};
+const ikPeriode = v => { INS.m = Number(v); return MODS.insiden('daftar'); };
+function qHtml(q, i) {
+  const id = 'q_' + i, lbl = `<label class="block text-[11px] font-bold text-text-secondary uppercase mb-1" for="${id}">${esc(q.label)}${q.required ? ' *' : ''}</label>`, opts = String(q.options || '').split(',').map(x => x.trim()).filter(Boolean);
+  if (q.type === 'heading') return `<h4 class="font-bold text-sm text-primary mt-4 mb-2 border-b border-border-subtle pb-1">${esc(q.label)}</h4>`;
+  if (q.type === 'textarea') return `<div class="mb-3">${lbl}<textarea id="${id}" rows="3" class="${IN}"></textarea></div>`;
+  if (q.type === 'select') return `<div class="mb-3">${lbl}<select id="${id}" class="${IN}"><option value="">- pilih -</option>${opts.map(o => `<option>${esc(o)}</option>`).join('')}</select></div>`;
+  if (q.type === 'radio') return `<div class="mb-3"><p class="text-[11px] font-bold text-text-secondary uppercase mb-1">${esc(q.label)}${q.required ? ' *' : ''}</p><div class="flex flex-wrap gap-x-4 gap-y-1">${opts.map(o => `<label class="text-xs flex items-center gap-1"><input type="radio" name="${id}" value="${esc(o)}"> ${esc(o)}</label>`).join('')}</div></div>`;
+  const ty = ['number', 'date', 'time', 'email'].indexOf(q.type) >= 0 ? q.type : 'text'; return `<div class="mb-3">${lbl}<input id="${id}" type="${ty}" class="${IN}"></div>`;
+}
+async function kirimIKP() {
+  const dj = {}, miss = [];
+  INS.q.forEach((q, i) => { if (q.type === 'heading') return; let v = ''; if (q.type === 'radio') { const e = document.querySelector(`input[name="q_${i}"]:checked`); v = e ? e.value : ''; } else v = ($('q_' + i).value || '').trim(); dj[q.label] = v; if (q.required && !v) miss.push(q.label); });
+  if (miss.length) { toast('Isian wajib belum lengkap: ' + miss.slice(0, 3).join('; '), 'error'); return; }
+  if (!(await confirmDlg('Kirim laporan insiden ini ke KMKP?'))) return; const r = await A('apiSubmitLaporanIKP', { data_json: dj }); toast(r.message || 'Laporan terkirim.'); await MODS.insiden('daftar');
+}
+async function detailIKP(id) { const x = INS.list.find(r => String(r.id) === String(id)); if (!x) return; const dj = x.data_json || {};
+  await dlg('Laporan ' + x.id, `<p class="mb-2">${badge(x.jenis_insiden)} ${x.grading_karu ? badge(x.grading_karu, GRAD[x.grading_karu]) : ''} <span class="text-text-muted">${esc(x.status)}</span></p>` + tbl([['Isian', k => `<span class="font-semibold">${esc(k[0])}</span>`], ['Jawaban', k => esc(k[1])]], Object.keys(dj).map(k => [k, dj[k]]).filter(k => String(k[1]).trim())) + (x.investigasi_sederhana_karu ? `<p class="mt-3"><b>Investigasi sederhana Karu:</b> ${esc(x.investigasi_sederhana_karu)}</p>` : ''), { ok: false, wide: true }); }
+async function gradingIKP(id) { const r = await formDlg('Grading Laporan ' + id, [{ k: 'grading', l: 'Grading risiko', t: 'select', o: [['Biru', 'Biru (rendah)'], ['Hijau', 'Hijau (sedang)'], ['Kuning', 'Kuning (tinggi)'], ['Merah', 'Merah (ekstrem)']] }, { k: 'investigasi', l: 'Investigasi sederhana', t: 'textarea', rows: 4 }], null, { save: v => A('apiSubmitGradingKaru', id, v.grading, v.investigasi) }); if (!r) return; toast(r.message || 'Grading tersimpan.'); await MODS.insiden('daftar'); }
+
+/* ---------- SOP ruangan ---------- */
+const KSB = { Draft: 'bg-slate-100 text-slate-700', Substansi: 'bg-amber-100 text-amber-800', Legalitas: 'bg-sky-100 text-sky-800', Final: 'bg-indigo-100 text-indigo-800', Approved: 'bg-green-100 text-green-800', Rejected: 'bg-orange-100 text-orange-800' };
+const KSL = { Draft: 'Draft', Substansi: 'Review Substansi', Legalitas: 'Review Legalitas', Final: 'Final', Approved: 'Disetujui', Rejected: 'Revisi' };
+let SP = { items: [], all: false };
+MODS.sop = async function (all) {
+  if (typeof all === 'boolean') SP.all = all; const r = await A('apiSopLibrary'); const un = VIEWALL() ? S.unit : S.user.ruangan;
+  SP.items = (r.items || []).filter(s => SP.all || !un || s.unit === un);
+  view(head('SOP Ruangan', `<label class="text-xs flex items-center gap-1"><input type="checkbox" ${SP.all ? 'checked' : ''} onchange="H(MODS.sop,this.checked)"> Semua ruangan</label>`) + card('', tbl([['SOP', s => `<b>${esc(s.judul)}</b><br><span class="text-text-muted">${esc(s.kategori || '')} • ${esc(s.unit)}</span>`], ['Status', s => badge(KSL[s.status] || s.status, KSB[s.status]) + (s.kadaluarsa ? ' ' + badge('Perlu ditinjau', 'bg-red-100 text-red-700') : '')], ['Berlaku', s => fmtD(s.tgl_berlaku)], ['Kadaluarsa', s => fmtD(s.tgl_kadaluarsa)], ['Aksi', s => BTN('Lihat', `H(lihatSop,'${esc(s.id)}')`)]], SP.items)));
+};
+async function lihatSop(id) { const s = SP.items.find(x => String(x.id) === String(id)), i = s.isi || {};
+  const ol = (t, a) => Array.isArray(a) && a.length ? `<h4 class="font-bold mt-3 mb-1">${t}</h4><ol class="list-decimal ml-5">${a.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : '';
+  await dlg(s.judul, `<p class="mb-2">${badge(KSL[s.status] || s.status, KSB[s.status])} <span class="text-text-muted">${esc(s.unit)} • v${esc(s.versi || '-')} • Berlaku ${fmtD(s.tgl_berlaku)} • Kadaluarsa ${fmtD(s.tgl_kadaluarsa)}</span></p>` + (s.isi ? ol('Dasar hukum', i.dasar_hukum) + ol('Kualifikasi pelaksana', i.kualifikasi) + (Array.isArray(i.prosedur) && i.prosedur.length ? '<h4 class="font-bold mt-3 mb-1">Prosedur</h4>' + tbl([['No', r => esc(r.no)], ['Kegiatan', r => r.head ? `<b>${esc(r.kegiatan)}</b>` : esc(r.kegiatan)], ['Waktu', r => esc(r.waktu || '')], ['Output', r => esc(r.output || '')]], i.prosedur) : '') : empty('Belum ada isi SOP. Lihat berkas di KMKP.')), { ok: false, wide: true }); }
+
+/* ---------- RTL ---------- */
+let RT = { f: '', items: [] };
+MODS.rtl = async function (f) {
+  if (typeof f === 'string') RT.f = f; const r = await A('apiKrRtlList', { unit: U(), status: RT.f }); RT.items = r.items;
+  view(head('Rencana Tindak Lanjut', WRITE() ? BTN('+ Tambah RTL', 'H(editRtl)', 'p') : '') + readOnlyNote() + `<p class="text-xs mb-2">Terbuka: <b>${r.terbuka}</b> • Terlambat: <b class="text-red-600">${r.terlambat}</b></p>` + card('', `<div class="mb-3"><select onchange="H(MODS.rtl,this.value)" class="${IN} !w-auto" aria-label="Filter status">${[['', 'Semua status'], ['Baru', 'Baru'], ['Proses', 'Proses'], ['Selesai', 'Selesai']].map(o => `<option value="${o[0]}" ${o[0] === RT.f ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>` + tbl([['Sumber', x => badge(x.sumber)], ['Uraian', x => esc(x.uraian) + (x.catatan ? `<br><span class="text-text-muted">${esc(x.catatan)}</span>` : '')], ['PJ', x => esc(x.pj || '-')], ['Batas', x => fmtD(x.batas_waktu) + (x.terlambat ? ' ' + badge('Terlambat', 'bg-red-100 text-red-700') : '')], ['Status', x => badge(x.status, x.status === 'Selesai' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800')], ['Aksi', x => WRITE() ? BTN('Ubah', `H(editRtl,'${x.id}')`) + (x.status !== 'Selesai' ? ' ' + BTN('Selesai', `H(rtlStatus,'${x.id}','Selesai')`) : '') : '']], RT.items)));
+};
+async function editRtl(id) { const cur = RT.items.find(x => x.id === id), r = await formDlg(cur ? 'Ubah RTL' : 'Tambah RTL', [{ k: 'sumber', l: 'Sumber', t: 'select', o: ['Supervisi', 'Audit', 'IKP', 'PDSA', 'Indikator', 'Lainnya'].map(x => [x, x]) }, { k: 'uraian', l: 'Uraian tindak lanjut', t: 'textarea', r: 1 }, { k: 'pj', l: 'Penanggung jawab' }, { k: 'batas_waktu', l: 'Batas waktu', t: 'date' }, { k: 'status', l: 'Status', t: 'select', o: ['Baru', 'Proses', 'Selesai'].map(x => [x, x]) }, { k: 'catatan', l: 'Catatan', t: 'textarea', rows: 2 }], cur || { sumber: 'Lainnya', status: 'Baru' }, { save: v => A('apiKrRtlSave', cur ? Object.assign(v, { id: id }) : v) });
+  if (!r) return; toast(r.message); await MODS.rtl(); }
+async function rtlStatus(id, s) { const r = await A('apiKrRtlSetStatus', id, s); toast(r.message); await MODS.rtl(); }
+
+/* ---------- Pelatihan, STR, SIP ---------- */
+let PL = { items: [], peg: [] };
+MODS.pelatihan = async function () {
+  const [r, pg] = await Promise.all([A('apiKrPelatihanList', U()), A('apiKrPegawaiList', U())]); PL.items = r.items; PL.peg = pg.items;
+  const bc = { Aktif: 'bg-green-100 text-green-800', 'Segera berakhir': 'bg-amber-100 text-amber-800', Kadaluarsa: 'bg-red-100 text-red-700', 'Tanpa masa berlaku': 'bg-slate-200 text-slate-600' };
+  view(head('Pelatihan, STR & SIP', WRITE() ? BTN('+ Tambah', 'H(editPlt)', 'p') : '') + readOnlyNote() + card('', tbl([['Pegawai', x => esc(x.pegawai)], ['Jenis', x => badge(x.jenis)], ['Nama', x => esc(x.nama) + (x.penyelenggara ? `<br><span class="text-text-muted">${esc(x.penyelenggara)}</span>` : '')], ['Berlaku s/d', x => fmtD(x.berlaku_sampai)], ['Status', x => badge(x.status, bc[x.status]) + (x.sisa_hari != null && x.sisa_hari >= 0 && x.sisa_hari <= 90 ? ` <span class="text-[10px] text-text-muted">${x.sisa_hari} hari lagi</span>` : '')], ['Sertifikat', x => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" class="text-primary underline">Buka</a>` : '-'], ['Aksi', x => WRITE() ? BTN('Ubah', `H(editPlt,'${x.id}')`) + ' ' + BTN('Hapus', `H(hapusPlt,'${x.id}')`, 'd') : '']], PL.items)));
+};
+async function editPlt(id) { const cur = PL.items.find(x => x.id === id); if (!PL.peg.length) { toast('Tambahkan pegawai terlebih dahulu.', 'error'); return; }
+  const r = await formDlg(cur ? 'Ubah Data' : 'Tambah Pelatihan / STR / SIP', [{ k: 'pegawai_id', l: 'Pegawai', t: 'select', o: PL.peg.map(p => [p.id, p.nama]) }, { k: 'jenis', l: 'Jenis', t: 'select', o: ['Pelatihan', 'STR', 'SIP'].map(x => [x, x]) }, { k: 'nama', l: 'Nama pelatihan / nomor dokumen', r: 1 }, { k: 'penyelenggara', l: 'Penyelenggara' }, { k: 'tanggal', l: 'Tanggal', t: 'date' }, { k: 'berlaku_sampai', l: 'Berlaku sampai', t: 'date' }, { k: 'url', l: 'Tautan sertifikat (https://...)' }], cur || { jenis: 'Pelatihan' }, { save: v => A('apiKrPelatihanSave', cur ? Object.assign(v, { id: id }) : v) });
+  if (!r) return; toast(r.message); await MODS.pelatihan(); }
+async function hapusPlt(id) { if (!(await confirmDlg('Hapus data ini?'))) return; const r = await A('apiKrPelatihanDelete', id); toast(r.message); await MODS.pelatihan(); }
+
+/* ---------- Dokumen ruangan ---------- */
+let DK = [];
+MODS.dokumen = async function () { const r = await A('apiKrDokumenList', U()); DK = r.items;
+  view(head('Dokumen Ruangan', WRITE() ? BTN('+ Tambah Dokumen', 'H(editDok)', 'p') : '') + readOnlyNote() + card('', tbl([['Judul', x => `<b>${esc(x.judul)}</b>` + (x.catatan ? `<br><span class="text-text-muted">${esc(x.catatan)}</span>` : '')], ['Kategori', x => esc(x.kategori || '-')], ['Tautan', x => `<a href="${esc(x.url)}" target="_blank" rel="noopener" class="text-primary underline">Buka</a>`], ['Aksi', x => WRITE() ? BTN('Ubah', `H(editDok,'${x.id}')`) + ' ' + BTN('Hapus', `H(hapusDok,'${x.id}')`, 'd') : '']], DK)));
+};
+async function editDok(id) { const cur = DK.find(x => x.id === id), r = await formDlg(cur ? 'Ubah Dokumen' : 'Tambah Dokumen', [{ k: 'judul', l: 'Judul', r: 1 }, { k: 'kategori', l: 'Kategori' }, { k: 'url', l: 'Tautan (https://...)', r: 1 }, { k: 'catatan', l: 'Catatan', t: 'textarea', rows: 2 }], cur, { save: v => A('apiKrDokumenSave', cur ? Object.assign(v, { id: id }) : v) }); if (!r) return; toast(r.message); await MODS.dokumen(); }
+async function hapusDok(id) { if (!(await confirmDlg('Hapus dokumen ini?'))) return; const r = await A('apiKrDokumenDelete', id); toast(r.message); await MODS.dokumen(); }
+
+/* ---------- Laporan & ekspor ---------- */
+let LP = null;
+MODS.laporan = async function (b) {
+  b = typeof b === 'string' && /^\d{4}-\d{2}$/.test(b) ? b : (LP && LP.bulan) || bln(); const l = await A('apiKrLaporanBulanan', b, U()); LP = l;
+  const ind = l.indikator || [], per = BLN[Number(b.slice(5, 7)) - 1] + ' ' + b.slice(0, 4);
+  view(head('Laporan Bulanan Ruangan', monthInput('lp-bln', b, 'MODS.laporan') + BTN('Cetak / PDF', 'window.print()') + BTN('Unduh CSV (Excel)', 'H(unduhCSV)', 'p')) + `<div id="laporan-cetak">${card(`<span class="text-base">Laporan ${esc(l.unit)} - ${esc(per)}</span>`, `<p class="text-xs">Pegawai aktif: <b>${l.pegawai.length}</b> • BOR: <b>${l.bor.bor_persen != null ? l.bor.bor_persen + '%' : '-'}</b> (hari perawatan ${l.bor.hari_perawatan}, tempat tidur ${l.bor.tempat_tidur}) • Supervisi: <b>${l.supervisi.items.length}</b> (rata-rata ${l.supervisi.rata_skor != null ? l.supervisi.rata_skor + '%' : '-'}) • Audit: <b>${l.audit.items.length}</b> (rata-rata ${l.audit.rata_skor != null ? l.audit.rata_skor + '%' : '-'}) • WISN terakhir: <b>${l.wisn ? l.wisn.status + ' (rasio ' + l.wisn.rasio_wisn + ')' : '-'}</b>${l.insiden_rs ? ' • Insiden RS: <b>' + l.insiden_rs.total + '</b>' : ''}</p>`)}
+  ${card('Indikator mutu', ind.length ? tbl([['Indikator', i => esc(i.nama)], ['Target', i => i.target_persen == null ? '-' : i.target_persen + (i.angka ? '' : '%')], ['Num', i => i.num], ['Denum', i => i.denum], ['Capaian', i => (i.angka || i.denum > 0) ? i.capaian + (i.angka ? '' : '%') : '-'], ['Tercapai', i => i.tercapai == null ? '-' : i.tercapai ? 'Ya' : 'Tidak'], ['Kirim KMKP', i => i.terkirim ? 'Sudah' : 'Belum']], ind) : empty(l.indikator_catatan || 'Tidak ada indikator.'), 'mt-4')}
+  ${card('Rekap jam kerja', tbl([['Pegawai', r => esc(r.nama)], ['Pagi', r => r.P], ['Siang', r => r.S], ['Malam', r => r.M], ['Total jam', r => r.jam]], l.jadwal_rekap), 'mt-4')}
+  ${card('Supervisi klinis', tbl([['Tanggal', s => fmtD(s.tanggal)], ['Pegawai', s => esc(s.pegawai_nama)], ['SOP', s => esc(s.judul)], ['Skor', s => s.skor + '%']], l.supervisi.items), 'mt-4')}
+  ${card('Rencana tindak lanjut', tbl([['Sumber', r => esc(r.sumber)], ['Uraian', r => esc(r.uraian)], ['Batas', r => fmtD(r.batas_waktu)], ['Status', r => esc(r.status) + (r.terlambat ? ' (terlambat)' : '')]], l.rtl.items), 'mt-4')}
+  ${card('STR / SIP / sertifikat segera berakhir atau kadaluarsa', tbl([['Pegawai', x => esc(x.pegawai)], ['Dokumen', x => esc(x.jenis + ' - ' + x.nama)], ['Berlaku s/d', x => fmtD(x.berlaku_sampai)], ['Status', x => esc(x.status)]], l.pelatihan), 'mt-4')}</div>`);
+};
+function unduhCSV() {
+  const l = LP, q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', row = a => a.map(q).join(','), out = [];
+  out.push(row(['Laporan bulanan ruangan', l.unit, l.bulan])); out.push(''); out.push(row(['INDIKATOR MUTU'])); out.push(row(['Indikator', 'Target %', 'Numerator', 'Denominator', 'Capaian %', 'Tercapai', 'Terkirim ke KMKP']));
+  (l.indikator || []).forEach(i => out.push(row([i.nama, i.target_persen, i.num, i.denum, i.capaian, i.tercapai == null ? '' : i.tercapai ? 'Ya' : 'Tidak', i.terkirim ? 'Sudah' : 'Belum'])));
+  out.push(''); out.push(row(['REKAP JAM KERJA'])); out.push(row(['Pegawai', 'Pagi', 'Siang', 'Malam', 'Lepas', 'Total jam'])); l.jadwal_rekap.forEach(r => out.push(row([r.nama, r.P, r.S, r.M, r.L, r.jam])));
+  out.push(''); out.push(row(['SUPERVISI'])); out.push(row(['Tanggal', 'Pegawai', 'SOP', 'Skor %', 'Catatan', 'RTL'])); l.supervisi.items.forEach(s => out.push(row([s.tanggal, s.pegawai_nama, s.judul, s.skor, s.catatan, s.rtl])));
+  out.push(''); out.push(row(['AUDIT'])); out.push(row(['Tanggal', 'Audit', 'Skor %', 'Temuan'])); l.audit.items.forEach(a => out.push(row([a.tanggal, a.judul, a.skor, a.temuan])));
+  out.push(''); out.push(row(['RTL'])); out.push(row(['Sumber', 'Uraian', 'PJ', 'Batas', 'Status'])); l.rtl.items.forEach(r => out.push(row([r.sumber, r.uraian, r.pj, r.batas_waktu, r.status])));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + out.join('\r\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'Laporan_' + String(l.unit).replace(/[^\w]+/g, '_') + '_' + l.bulan + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------- Notifikasi ---------- */
+MODS.notif = async function () { const r = await A('apiKrNotifikasi', U()); const b = $('notif-badge'); b.textContent = r.jumlah; b.classList.toggle('hidden', !r.jumlah);
+  const C = { bahaya: 'border-red-300 bg-red-50', peringatan: 'border-amber-300 bg-amber-50', info: 'border-sky-200 bg-sky-50' };
+  view(head('Notifikasi') + (r.items.length ? r.items.map(x => `<div class="rounded-xl border ${C[x.tingkat] || C.info} p-3 mb-2 flex items-center gap-3"><div class="flex-1 min-w-0"><p class="text-xs font-bold">${esc(x.judul)}</p><p class="text-[11px] text-text-secondary">${esc(x.detail)}</p></div>${BTN('Buka', `H(go,'${esc(x.tab)}')`)}</div>`).join('') : card('', empty('Tidak ada pemberitahuan. Semuanya terkendali.'))));
+};
+
+/* ---------- Mulai ---------- */
+window.addEventListener('DOMContentLoaded', async () => {
+  $('form-login').addEventListener('submit', e => { e.preventDefault(); H(handleLogin, e); });
+  let t = null; try { t = localStorage.getItem('karu_token'); } catch (e) {}
+  if (!/^https?:\/\//.test(API)) { showLogin('URL API belum diatur. Isi KARU_API_URL pada file config.js.'); return; }
+  if (t) { try { const r = await call('apiRestoreSession', [t], true); if (r && r.success && r.user) { S.token = t; S.user = r.user; await startApp(); return; } } catch (e) {} endSession(false); } else showLogin('');
+});
+
+  </script>
+</body>
+</html>

@@ -560,6 +560,15 @@
 /* ===== Manajemen Karu RSUD Merauke - halaman depan. Semua data lewat API Karu (GAS); KMKP diakses lewat gerbang API itu. ===== */
 const API = String(window.KARU_API_URL || '').trim();
 const S = { token: null, user: null, unit: '', units: [], tab: 'dash' };
+/* Galat apa pun selalu ditampilkan di layar (tidak lagi layar putih tanpa keterangan). */
+function fatal(msg) {
+  let b = document.getElementById('fatal-banner');
+  if (!b) { b = document.createElement('div'); b.id = 'fatal-banner'; b.setAttribute('role', 'alert'); b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#991b1b;color:#fff;padding:10px 14px;font:600 13px/1.45 system-ui,sans-serif;display:flex;gap:12px;align-items:flex-start;box-shadow:0 2px 10px rgba(0,0,0,.3)'; (document.body || document.documentElement).appendChild(b); }
+  b.innerHTML = '<div style="flex:1;word-break:break-word"></div><button type="button" style="background:#fff;color:#991b1b;border:0;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer">Tutup</button>';
+  b.firstChild.textContent = msg; b.lastChild.onclick = () => b.remove();
+}
+window.addEventListener('error', e => { if (e && e.message) fatal('Galat pada halaman: ' + e.message); });
+window.addEventListener('unhandledrejection', e => { const m = e && e.reason && (e.reason.message || e.reason); if (m && !(e.reason && (e.reason.auth || e.reason.toasted))) fatal('Galat tak tertangani: ' + m); });
 const $ = id => document.getElementById(id);
 const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const WRITE = () => ['Karu', 'Admin'].indexOf(S.user.role) >= 0;
@@ -580,8 +589,13 @@ async function call(fn, args, quiet) {
   loading(true);
   try {
     if (!/^https?:\/\//.test(API)) throw new Error('URL API belum diatur. Isi KARU_API_URL pada file config.js.');
-    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) });
-    const j = await r.json(); if (!j.ok) throw new Error(j.error || 'Gagal menghubungi server.');
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 60000);
+    let r, tx;
+    try { r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }), signal: ctl.signal }); tx = await r.text(); }
+    catch (x) { throw new Error(x && x.name === 'AbortError' ? 'Server tidak merespons dalam 60 detik. Coba lagi.' : 'Tidak dapat terhubung ke server (' + ((x && x.message) || 'jaringan') + '). Pastikan URL /exec benar, akses penerapan "Siapa saja", dan Versi baru sudah di-deploy.'); }
+    finally { clearTimeout(tm); }
+    let j; try { j = JSON.parse(tx); } catch (x) { throw new Error('Server mengembalikan halaman, bukan data (HTTP ' + r.status + '). Periksa Deploy: Jalankan sebagai "Saya", akses "Siapa saja", buka URL /exec, lalu buat Versi baru.'); }
+    if (!j.ok) throw new Error(j.error || 'Gagal menghubungi server.');
     const res = j.result;
     if (res && res.success === false) { if (res.code === 'AUTH') { endSession(true); const e = new Error('AUTH'); e.auth = true; throw e; } throw new Error(res.message || 'Gagal.'); }
     return res;
@@ -665,6 +679,14 @@ async function handleLogin(ev) {
   catch (e) { if (!e.auth) $('login-error').textContent = e.message; }
 }
 async function startApp() {
+  try { await startApp_(); }
+  catch (e) {
+    if (e && e.auth) return;
+    console.error(e); fatal('Gagal membuka aplikasi: ' + ((e && e.message) || e));
+    try { view(card('', `<p class="text-sm text-red-600 font-semibold mb-2">Gagal membuka aplikasi</p><p class="text-xs mb-3">${esc((e && e.message) || e)}</p>${BTN('Muat ulang', 'location.reload()', 'p')} ${BTN('Keluar', 'H(logout)')}`)); } catch (x) {}
+  }
+}
+async function startApp_() {
   const u = S.user; $('view-auth').classList.add('hidden'); $('view-app').classList.remove('hidden'); $('nav-tabstrip').classList.remove('hidden');
   const c = $('user-header-controls'); c.classList.remove('hidden'); c.classList.add('flex');
   $('user-initials').textContent = (u.nama || u.username || 'U').trim().charAt(0).toUpperCase(); $('user-display-name').textContent = u.nama || u.username; $('user-display-role').textContent = ROLE_LABEL[u.role] || u.role;
@@ -946,6 +968,8 @@ MODS.notif = async function () { const r = await A('apiKrNotifikasi', U()); cons
 
 /* ---------- Mulai ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
+  if (typeof tailwind === 'undefined') fatal('Gaya tampilan (Tailwind dari cdn.tailwindcss.com) gagal dimuat. Periksa koneksi internet atau pembatasan jaringan, lalu muat ulang halaman.');
+  if (/\/dev(\?|$)/.test(API)) fatal('Anda membuka alamat /dev. Gunakan alamat /exec dari Deploy > Kelola penerapan.');
   $('form-login').addEventListener('submit', e => { e.preventDefault(); H(handleLogin, e); });
   let t = null; try { t = localStorage.getItem('karu_token'); } catch (e) {}
   if (!/^https?:\/\//.test(API)) { showLogin('URL API belum diatur. Isi KARU_API_URL pada file config.js.'); return; }

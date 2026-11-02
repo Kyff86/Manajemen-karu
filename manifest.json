@@ -1,1 +1,15 @@
-{"name":"Manajemen Karu RSUD Merauke","short_name":"Manajemen Karu","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#166534","icons":[{"src":"logo.png","sizes":"192x192","type":"image/png"}]}
+{
+  "name": "Manajemen Karu RSUD Merauke",
+  "short_name": "Manajemen Karu",
+  "description": "Aplikasi manajemen kepala ruangan (Karu) RSUD Merauke terintegrasi dengan KMKP",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f0fdf4",
+  "theme_color": "#166534",
+  "icons": [
+    { "src": "logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+

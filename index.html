@@ -499,13 +499,15 @@ MODS.jadwal = async function (b) {
   b = typeof b === 'string' && /^\d{4}-\d{2}$/.test(b) ? b : (JD && JD.bulan) || bln();
   if (JD && (JD.bulan !== b || JD.u !== U()) && jdDirty() && !(await confirmDlg('Ada perubahan jadwal yang belum disimpan dan akan hilang. Lanjutkan?'))) { drawJadwal(); return; }
   jdCss();
-  const pv = JD || {}, [pg, jd, rk] = await Promise.all([A('apiKrPegawaiList', U()), A('apiKrJadwalList', b, U()), A('apiKrJadwalRekap', b, U())]);
+  const pv = JD || {}, [pg, jd, rk, tt] = await Promise.all([A('apiKrPegawaiList', U()), A('apiKrJadwalList', b, U()), A('apiKrJadwalRekap', b, U()), A('apiKrTtdGet', U())]);
   const cells = {}; jd.items.forEach(i => { cells[i.tanggal + '|' + i.pegawai_id] = i.shift; });
-  JD = { bulan: b, n: new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)), 0).getDate(), unit: jd.unit || '', u: U(), peg: pg.items.filter(p => p.aktif), cells: cells, orig: Object.assign({}, cells), shift: jd.shift || {}, rekap: rk.items,
+  JD = { bulan: b, n: new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)), 0).getDate(), unit: jd.unit || '', u: U(), peg: pg.items.filter(p => p.aktif), cells: cells, orig: Object.assign({}, cells), shift: jd.shift || {}, rekap: rk.items, ttd: (tt && tt.item) || {},
     edit: !!pv.edit, brush: pv.brush || 'P', letters: !!pv.letters, hist: [], drag: null, arsip: null, print: pv.print || null };
   drawJadwal();
 };
 function jdCell(k, s, now) { return `<td class="jd-c${s ? ' jd-f' : ''}${JDX[s] ? ' jd-x' : ''}${now ? ' jd-tdy' : ''}" data-k="${esc(k)}"${s ? ` style="background:${JDC[s].bg};color:${JDC[s].fg}"` : ''}>${s}</td>`; }
+// Teks nama dan NIP tanda tangan: bila belum diisi tampil placeholder
+function sigT(t, k) { const n = (t || {})[k + '_nama'], p = (t || {})[k + '_nip']; return n ? '<b>' + esc(n) + '</b>' + (p ? '<br>NIP. ' + esc(p) : '') : '<small>Nama &amp; NIP</small>'; }
 function jdSheet(ed) {
   const b = JD.bulan, y = Number(b.slice(0, 4)), m = Number(b.slice(5, 7)), n = JD.n, HN = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const days = Array.from({ length: n }, (_, i) => i + 1), dow = d => new Date(y, m - 1, d).getDay();
@@ -519,7 +521,7 @@ function jdSheet(ed) {
 <div class="jd-ti">JADWAL DINAS PERAWAT — RUANGAN ${esc(unit)}</div><div class="jd-bl"><span>${BLN[m - 1].toUpperCase()} ${y}</span>${isNow ? `<span class="jd-tdl">Hari ini: ${HN[dow(td)]}, ${td} ${BLN[m - 1]} ${y}</span>` : ''}</div>
 <div class="jd-wrap"><table class="jd-t"><thead><tr><th class="jd-no" rowspan="2">NO</th><th class="jd-nm" rowspan="2">NAMA PERAWAT</th><th colspan="${n}">TANGGAL</th><th class="jd-jh">JUMLAH</th></tr><tr>${th}<th class="jd-jh">IJIN/SAKIT</th></tr></thead><tbody>${rows}${cv}</tbody></table></div>
 <div class="jd-lgd">${lg}</div>
-<div class="jd-sg"><div>Mengetahui,<br>Kepala Bidang Keperawatan<div class="jd-ln"></div><small>Nama &amp; NIP</small></div><div>Merauke, ....................... ${y}<br>Kepala Ruangan ${esc(JD.unit || '')}<div class="jd-ln"></div><small>Nama &amp; NIP</small></div></div></div>`;
+<div class="jd-sg"><div>Mengetahui,<br>Kepala Bidang Keperawatan<div class="jd-ln"></div>${sigT(JD.ttd, 'kabid')}</div><div>Merauke, ....................... ${y}<br>Kepala Ruangan ${esc(JD.unit || '')}<div class="jd-ln"></div>${sigT(JD.ttd, 'karu')}</div></div></div>`;
 }
 function drawJadwal() {
   const arc = !!JD.arsip, W = WRITE() && !arc, ed = JD.edit && W, dirty = jdDirty(), y = JD.bulan.slice(0, 4), m = Number(JD.bulan.slice(5, 7));
@@ -528,7 +530,7 @@ function drawJadwal() {
     + (arc ? jb('Kembali ke Jadwal Aktif', 'event_available', 'H(jdAktif)', 'jd-p') : '')
     + (W ? jb(ed ? 'Selesai Edit' : 'Edit Jadwal', ed ? 'check' : 'edit', 'H(jdToggle)', ed ? 'jd-ok' : 'jd-p') : '')
     + (W && (ed || dirty) ? jb('Simpan', 'save', 'H(simpanJadwal)', 'jd-p' + (dirty ? ' jd-dot' : ''), 'id="jd-save"' + (dirty ? '' : ' disabled')) : '')
-    + (W ? jb('Tukar Dinas', 'swap_horiz', 'H(tukarDinas)') + jb('Arsipkan', 'inventory_2', 'H(jdArsipkan)') : '')
+    + (W ? jb('Tukar Dinas', 'swap_horiz', 'H(tukarDinas)') + jb('Arsipkan', 'inventory_2', 'H(jdArsipkan)') + jb('Nama &amp; NIP TTD', 'badge', 'H(jdTtd)') : '')
     + jb('Riwayat', 'history', 'H(jdRiwayat)') + jb('Cetak', 'print', 'H(jdCetak)') + jb('Unduh Excel', 'download', 'H(jdCsv)');
   const sw = k => `<button type="button" data-b="${k}" onclick="H(jdBrush,'${k}')" class="jd-sw${JD.brush === k ? ' jd-on' : ''}"><i style="background:${k === '-' ? '#fff' : JDC[k].bg}"></i>${k === '-' ? 'Hapus' : JDN[k]}<kbd>${k === '-' ? 'X' : k}</kbd></button>`;
   const tb = ed ? `<div class="jd-tb no-print"><div class="jd-pal" role="group" aria-label="Pilih shift">${JDK.concat(['-']).map(sw).join('')}</div>
@@ -539,6 +541,13 @@ function drawJadwal() {
     + card('', `<label class="jd-chk no-print"><input type="checkbox" ${JD.letters ? 'checked' : ''} onchange="H(jdLetters,this.checked)"> Tampilkan huruf shift di dalam kotak</label>` + (JD.peg.length ? jdSheet(ed) : empty('Tambahkan pegawai terlebih dahulu di menu Pegawai.')))
     + card('Rekap jam kerja ' + BLN[m - 1] + ' ' + y, jdRekapHtml(JD.rekap), 'mt-4 no-print'));
   jdBind(); jdSums();
+}
+// Form nama & NIP tanda tangan (Kabid Keperawatan dan Kepala Ruangan), disimpan per ruangan
+const TTD_F = [{ k: 'kabid_nama', l: 'Nama Kepala Bidang Keperawatan' }, { k: 'kabid_nip', l: 'NIP Kepala Bidang Keperawatan' }, { k: 'karu_nama', l: 'Nama Kepala Ruangan', r: 1 }, { k: 'karu_nip', l: 'NIP Kepala Ruangan' }];
+async function jdTtd() {
+  const t = JD.ttd || {};
+  const r = await formDlg('Nama & NIP Tanda Tangan Jadwal', TTD_F, { kabid_nama: t.kabid_nama || '', kabid_nip: t.kabid_nip || '', karu_nama: t.karu_nama || (S.user && S.user.nama) || '', karu_nip: t.karu_nip || (S.user && S.user.nip) || '' }, { save: v => A('apiKrTtdSave', U(), v) });
+  if (!r) return; toast(r.message); JD.ttd = r.ttd || JD.ttd; drawJadwal();
 }
 function jdRekapHtml(rows) {
   if (!rows || !rows.length) return empty('Belum ada data rekap.');
@@ -664,7 +673,7 @@ async function jdBukaArsip(b) {
   if (jdDirty() && !(await confirmDlg('Ada perubahan jadwal yang belum disimpan dan akan hilang. Lanjutkan?'))) return;
   jdCss(); const r = await A('apiKrJadwalArsipGet', b, U()), cells = {};
   r.peg.forEach(p => { for (let d = 1; d <= r.n; d++) { const c = p.s.charAt(d - 1); if (c && c !== '-' && c !== ' ') cells[b + '-' + pad2(d) + '|' + p.id] = c; } });
-  const pv = JD || {}; JD = { bulan: b, n: r.n, unit: r.unit, u: U(), peg: r.peg.map(p => ({ id: p.id, nama: p.nama })), cells: cells, orig: Object.assign({}, cells), shift: r.shift || {}, rekap: [], edit: false, brush: pv.brush || 'P', letters: !!pv.letters, hist: [], drag: null, arsip: { dibuat: r.dibuat, oleh: r.oleh }, print: pv.print || null };
+  const pv = JD || {}; JD = { bulan: b, n: r.n, unit: r.unit, u: U(), peg: r.peg.map(p => ({ id: p.id, nama: p.nama })), cells: cells, orig: Object.assign({}, cells), shift: r.shift || {}, rekap: [], ttd: pv.ttd || {}, edit: false, brush: pv.brush || 'P', letters: !!pv.letters, hist: [], drag: null, arsip: { dibuat: r.dibuat, oleh: r.oleh }, print: pv.print || null };
   JD.rekap = jdRekapLokal(); drawJadwal();
 }
 async function jdRiwayat() {
@@ -772,8 +781,9 @@ async function editAudTpl(id) { const cur = (AUD.all || []).find(x => x.id === i
 let IND = { b: '', ind: [], har: null };
 MODS.indikator = async function (b) {
   IND.b = typeof b === 'string' && /^\d{4}-\d{2}$/.test(b) ? b : (IND.b || bln());
-  const [ind, har] = await Promise.all([A('apiKrIndikatorUnit', U()), A('apiKrHarianList', IND.b, U())]); IND.ind = ind.items; IND.har = har;
-  view(head('Indikator Mutu Ruangan', monthInput('ind-bln', IND.b, 'MODS.indikator')) + readOnlyNote() + card('', tbl([['Indikator', i => `<b>${esc(i.nama_indikator)}</b><br><span class="text-text-muted">${esc(i.kategori || '')}</span>`], ['Target', i => i.target_persen === '' ? '-' : (i.formula_tipe === 'le' ? '≤ ' : '≥ ') + i.target_persen + (i.mode_angka ? '' : '%')],
+  const [ind, har] = await Promise.all([A('apiKrIndikatorUnit', U()), A('apiKrHarianList', IND.b, U())]); IND.ind = ind.items; IND.har = har; IND.daftar = ind.daftar_unit_kmkp || [];
+  const nk = IND.ind.length ? '' : `<div class="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-300 text-xs text-amber-900">Belum ada indikator untuk ruangan <b>${esc((S.user && S.user.ruangan) || '-')}</b> di KMKP. Ruangan yang tersedia di KMKP: ${esc((IND.daftar || []).join(', ') || 'belum ada')}. Pastikan nama ruangan akun Anda sama dengan nama di Master Unit KMKP, atau hubungi Komite Mutu.</div>`;
+  view(head('Indikator Mutu Ruangan', monthInput('ind-bln', IND.b, 'MODS.indikator')) + readOnlyNote() + nk + card('', tbl([['Indikator', i => `<b>${esc(i.nama_indikator)}</b><br><span class="text-text-muted">${esc(i.kategori || '')}</span>`], ['Target', i => i.target_persen === '' ? '-' : (i.formula_tipe === 'le' ? '≤ ' : '≥ ') + i.target_persen + (i.mode_angka ? '' : '%')],
     ['Num / Denum', i => { const r = har.rekap[i.id_indikator]; return r ? (i.mode_angka ? r.num : r.num + ' / ' + r.denum) : '-'; }], ['Capaian', i => { const r = har.rekap[i.id_indikator]; if (!r || (!i.mode_angka && r.denum <= 0)) return '-'; const t = i.target_persen === '' ? null : Number(i.target_persen), ok = t === null ? null : (i.formula_tipe === 'le' ? r.capaian <= t : r.capaian >= t); return badge(r.capaian + (i.mode_angka ? '' : '%'), ok === null ? '' : ok ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'); }],
     ['KMKP', i => har.terkirim[i.id_indikator] ? badge(har.terkirim[i.id_indikator].status || 'Terkirim', 'bg-sky-100 text-sky-800') : badge('Belum kirim', 'bg-slate-200 text-slate-600')],
     ['Aksi', i => BTN('Rincian', `H(rincianInd,'${i.id_indikator}')`) + (WRITE() ? ' ' + BTN('Isi Harian', `H(isiHarian,'${i.id_indikator}')`) + ' ' + BTN('Kirim ke KMKP', `H(kirimInd,'${i.id_indikator}')`, 'p') : '')]], IND.ind)));

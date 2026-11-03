@@ -63,21 +63,17 @@
     #app-header-logo { width: 44px !important; height: 44px !important; flex: 0 0 44px; }
     #login-logo { width: 80px !important; height: 80px !important; display: block; margin: 0 auto; }
 
-    /* Sidebar navigasi kiri */
+    /* Sidebar navigasi kiri: tersembunyi otomatis, dibuka lewat tombol menu. Saat isi menu dibuka, konten tampil layar penuh. */
     :root { --hdr-h: 88px; --sb-w: 232px; }
     #nav-tabstrip { position: fixed; left: 0; top: var(--hdr-h); bottom: 0; width: var(--sb-w); z-index: 30; overflow-y: auto; }
     #nav-tabstrip:not(.hidden) { display: flex; flex-direction: column; }
     #nav-hamburger { display: none; }
     #nav-overlay { display: none; position: fixed; left: 0; right: 0; bottom: 0; top: var(--hdr-h); background: rgba(0,0,0,.4); z-index: 29; }
-    @media (min-width: 768px) {
-      body:has(#nav-tabstrip:not(.hidden)) main { padding-left: var(--sb-w); }
-    }
-    @media (max-width: 767px) {
-      #nav-tabstrip { transform: translateX(-100%); transition: transform .25s ease; box-shadow: 4px 0 18px rgba(0,0,0,.15); max-width: 85vw; }
-      #nav-tabstrip.open { transform: translateX(0); }
-      #nav-overlay.show { display: block; }
-      body:has(#nav-tabstrip:not(.hidden)) #nav-hamburger { display: flex; }
-    }
+    #nav-tabstrip { transform: translateX(-100%); transition: transform .25s ease; box-shadow: 4px 0 18px rgba(0,0,0,.15); max-width: 85vw; }
+    #nav-tabstrip.open { transform: translateX(0); }
+    #nav-overlay.show { display: block; }
+    body:has(#nav-tabstrip:not(.hidden)) #nav-hamburger { display: flex; }
+    body.fs-view #app-wrap { max-width: none; }
     @media print {
       header, aside, #nav-overlay, #nav-hamburger, .no-print { display: none !important; }
       main { padding: 0 !important; }
@@ -215,7 +211,7 @@
   </div>
 
   <main class="flex-grow w-full pt-28 pb-12">
-    <div class="max-w-[1080px] mx-auto px-4">
+    <div id="app-wrap" class="max-w-[1080px] mx-auto px-4">
       <section id="view-auth" class="max-w-md mx-auto my-8">
         <div class="bg-surface-card rounded-2xl shadow-xl border border-border-subtle overflow-hidden">
           <div class="bg-gradient-to-r from-primary via-navy-deep to-primary-container p-6 text-white text-center">
@@ -358,7 +354,7 @@ function toggleProfileMenu(e) { e.stopPropagation(); $('profile-dropdown').class
 function closeProfileMenu() { $('profile-dropdown').classList.add('hidden'); }
 document.addEventListener('click', e => { const d = $('profile-dropdown'); if (d && !d.classList.contains('hidden') && !$('profile-menu-wrap').contains(e.target)) closeProfileMenu(); });
 function togglePasswordVisibility(id) { const e = $(id); e.type = e.type === 'password' ? 'text' : 'password'; }
-function showLogin(msg) { $('view-auth').classList.remove('hidden'); $('view-app').classList.add('hidden'); $('nav-tabstrip').classList.add('hidden'); $('user-header-controls').classList.add('hidden'); $('user-header-controls').classList.remove('flex'); $('login-error').textContent = msg || ''; }
+function showLogin(msg) { document.body.classList.remove('fs-view');$('view-auth').classList.remove('hidden'); $('view-app').classList.add('hidden'); $('nav-tabstrip').classList.add('hidden'); $('user-header-controls').classList.add('hidden'); $('user-header-controls').classList.remove('flex'); $('login-error').textContent = msg || ''; }
 function endSession(expired) { document.querySelectorAll('[role=dialog]').forEach(d => d.parentNode && d.parentNode.remove()); S.token = null; S.user = null; try { localStorage.removeItem('karu_token'); } catch (e) {} showLogin(expired ? 'Sesi berakhir. Silakan masuk kembali.' : ''); }
 async function handleLogin(ev) {
   ev.preventDefault(); $('login-error').textContent = '';
@@ -374,7 +370,7 @@ async function startApp() {
   }
 }
 async function startApp_() {
-  const u = S.user; $('view-auth').classList.add('hidden'); $('view-app').classList.remove('hidden'); $('nav-tabstrip').classList.remove('hidden');
+  const u = S.user; document.body.classList.add('fs-view'); $('view-auth').classList.add('hidden'); $('view-app').classList.remove('hidden'); $('nav-tabstrip').classList.remove('hidden');
   const c = $('user-header-controls'); c.classList.remove('hidden'); c.classList.add('flex');
   $('user-initials').textContent = (u.nama || u.username || 'U').trim().charAt(0).toUpperCase(); $('user-display-name').textContent = u.nama || u.username; $('user-display-role').textContent = ROLE_LABEL[u.role] || u.role;
   $('dropdown-user-name').textContent = u.nama || u.username; $('dropdown-user-room').textContent = 'Ruangan: ' + (u.ruangan || '-');
@@ -434,6 +430,9 @@ function jdCss() {
 .jd-t thead th{background:#14532d;color:#fff;font:700 10px var(--jf);letter-spacing:.7px;height:26px;padding:0 4px;border-right:1px solid rgba(255,255,255,.2);border-bottom:1px solid rgba(255,255,255,.2)}
 .jd-t thead tr+tr th{background:#166534}.jd-t thead tr+tr th.jd-d{font:700 11px var(--jf);letter-spacing:0;min-width:26px;padding:0}
 .jd-t thead th.jd-sun{background:#b91c1c}
+.jd-t thead tr+tr th.jd-now{background:#f59e0b;color:#422006}
+.jd-t td.jd-tdy{box-shadow:inset 0 0 0 2px #f59e0b}
+.jd-bl .jd-tdl{display:inline-block;margin-left:8px;font:700 11px var(--jf);letter-spacing:.6px;color:#422006;background:#fef3c7;border:1px solid #f59e0b;border-radius:999px;padding:4px 14px}
 .jd-t thead th.jd-no,.jd-t thead th.jd-nm{background:#14532d;z-index:3}
 .jd-t .jd-no{position:sticky;left:0;z-index:2;background:#fff;min-width:30px;color:#64748b;font:600 10.5px var(--jf)}
 .jd-t .jd-nm{position:sticky;left:30px;z-index:2;background:#fff;text-align:left;padding:0 10px;white-space:nowrap;min-width:230px;font:600 11.5px var(--jf);color:#0f172a}
@@ -506,18 +505,18 @@ MODS.jadwal = async function (b) {
     edit: !!pv.edit, brush: pv.brush || 'P', letters: !!pv.letters, hist: [], drag: null, arsip: null, print: pv.print || null };
   drawJadwal();
 };
-function jdCell(k, s) { return `<td class="jd-c${s ? ' jd-f' : ''}${JDX[s] ? ' jd-x' : ''}" data-k="${esc(k)}"${s ? ` style="background:${JDC[s].bg};color:${JDC[s].fg}"` : ''}>${s}</td>`; }
+function jdCell(k, s, now) { return `<td class="jd-c${s ? ' jd-f' : ''}${JDX[s] ? ' jd-x' : ''}${now ? ' jd-tdy' : ''}" data-k="${esc(k)}"${s ? ` style="background:${JDC[s].bg};color:${JDC[s].fg}"` : ''}>${s}</td>`; }
 function jdSheet(ed) {
   const b = JD.bulan, y = Number(b.slice(0, 4)), m = Number(b.slice(5, 7)), n = JD.n, HN = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const days = Array.from({ length: n }, (_, i) => i + 1), dow = d => new Date(y, m - 1, d).getDay();
-  const th = days.map(d => `<th class="jd-d${dow(d) === 0 ? ' jd-sun' : ''}"${ed ? ` data-col="${d}"` : ''} title="${HN[dow(d)]} ${d}">${d}</th>`).join('');
-  const rows = JD.peg.map((p, i) => `<tr><td class="jd-no">${i + 1}</td><td class="jd-nm"${ed ? ` data-row="${esc(p.id)}" title="Klik untuk mengisi satu baris"` : ''}>${esc(p.nama)}</td>${days.map(d => { const k = jdKey(d, p.id); return jdCell(k, JD.cells[k] || ''); }).join('')}<td class="jd-jm" data-rt="${esc(p.id)}">${jdCount(p.id)}</td></tr>`).join('');
+  const isNow = today().slice(0, 7) === b, td = Number(today().slice(8, 10)), th = days.map(d => `<th class="jd-d${dow(d) === 0 ? ' jd-sun' : ''}${isNow && d === td ? ' jd-now' : ''}"${ed ? ` data-col="${d}"` : ''} title="${HN[dow(d)]} ${d}">${d}</th>`).join('');
+  const rows = JD.peg.map((p, i) => `<tr><td class="jd-no">${i + 1}</td><td class="jd-nm"${ed ? ` data-row="${esc(p.id)}" title="Klik untuk mengisi satu baris"` : ''}>${esc(p.nama)}</td>${days.map(d => { const k = jdKey(d, p.id); return jdCell(k, JD.cells[k] || '', isNow && d === td); }).join('')}<td class="jd-jm" data-rt="${esc(p.id)}">${jdCount(p.id)}</td></tr>`).join('');
   const cv = ['P', 'S', 'M'].map(k => `<tr class="jd-cv"><td class="jd-no"></td><td class="jd-nm"><i style="background:${JDC[k].bg}"></i>Jumlah dinas ${JDN[k]}</td>${days.map(d => `<td data-cv="${k}|${d}"></td>`).join('')}<td></td></tr>`).join('');
   const lg = JDK.map(k => { const sf = JD.shift[k] || {}; return `<span class="jd-lg"><i style="background:${JDC[k].bg}"></i><b>${k}</b> = ${JDN[k]}${sf.mulai ? ' (' + esc(sf.mulai) + '–' + esc(sf.selesai) + ')' : ''}</span>`; }).join('') + `<span class="jd-lg"><i style="background:#dc2626"></i>Tanggal merah pada judul = hari Minggu</span>`;
   const unit = String(JD.unit || (S.user && S.user.ruangan) || '').toUpperCase();
   return `<div id="jd-sheet" class="${ed ? 'jd-edit' : ''} ${JD.letters ? 'jd-ltr' : ''}">
 <div class="jd-hd"><b>RUMAH SAKIT UMUM DAERAH MERAUKE</b><em>Jl. Sukarjo Wiryopranoto Merauke · Telp. (0971) 321124-321125</em></div>
-<div class="jd-ti">JADWAL DINAS PERAWAT — RUANGAN ${esc(unit)}</div><div class="jd-bl"><span>${BLN[m - 1].toUpperCase()} ${y}</span></div>
+<div class="jd-ti">JADWAL DINAS PERAWAT — RUANGAN ${esc(unit)}</div><div class="jd-bl"><span>${BLN[m - 1].toUpperCase()} ${y}</span>${isNow ? `<span class="jd-tdl">Hari ini: ${HN[dow(td)]}, ${td} ${BLN[m - 1]} ${y}</span>` : ''}</div>
 <div class="jd-wrap"><table class="jd-t"><thead><tr><th class="jd-no" rowspan="2">NO</th><th class="jd-nm" rowspan="2">NAMA PERAWAT</th><th colspan="${n}">TANGGAL</th><th class="jd-jh">JUMLAH</th></tr><tr>${th}<th class="jd-jh">IJIN/SAKIT</th></tr></thead><tbody>${rows}${cv}</tbody></table></div>
 <div class="jd-lgd">${lg}</div>
 <div class="jd-sg"><div>Mengetahui,<br>Kepala Bidang Keperawatan<div class="jd-ln"></div><small>Nama &amp; NIP</small></div><div>Merauke, ....................... ${y}<br>Kepala Ruangan ${esc(JD.unit || '')}<div class="jd-ln"></div><small>Nama &amp; NIP</small></div></div></div>`;

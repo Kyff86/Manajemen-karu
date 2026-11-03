@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <!-- ===== INDEX UNTUK GITHUB PAGES =====
+       Unggah ke repo GitHub dengan nama berkas "index.html" (ganti nama setelah diunduh). JANGAN ditempel ke Apps Script.
+       (URL API dibaca dari config.js) ===== -->
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="theme-color" content="#14532d"/>
@@ -582,10 +586,10 @@ function isiHarianSederhana(i) {
 }
 async function isiHarian(id) {
   const i = IND.ind.find(x => x.id_indikator === id); let info = null;
-  try { info = await AQ('apiKrFormIsian', id, today(), U()); } catch (e) { if (e && e.auth) return; info = null; }
+  try { info = await AQ('apiKrFormIsian', id, today(), U()); } catch (e) { if (e && e.auth) return; info = null; toast('Formulir lengkap tidak dapat dimuat: ' + ((e && e.message) || 'tidak diketahui') + ' (pastikan Kode.gs dan Formulir.gs terbaru sudah dipasang dan di-deploy Versi baru).', 'error'); }
   let r;
   if (info && info.template) r = await isiHarianForm(i, info);
-  else r = await isiHarianSederhana(i);   // template tidak tersedia: isian angka seperti sebelumnya
+  else { if (info) toast(info.alasan || 'Template formulir tidak ditemukan.', 'error'); r = await isiHarianSederhana(i); }   // tanpa template: isian angka
   if (!r) return; toast(r.message); await MODS.indikator(IND.b);
 }
 function isiHarianForm(i, info) {

@@ -686,7 +686,7 @@ MODS.pegawai = async function () {
   const r = await A('apiKrPegawaiList', U()); PG = r.items;
   view(head('Pegawai Ruangan', WRITE() ? BTN('+ Tambah Pegawai', 'H(editPegawai)', 'p') : '') + readOnlyNote() + card('', tbl([['Nama', p => `<b>${esc(p.nama)}</b>`], ['NIP', p => esc(p.nip || '-')], ['Jabatan', p => esc(p.jabatan || '-')], ['PK', p => esc(p.level_pk || '-')], ['Status', p => badge(p.aktif ? 'Aktif' : 'Nonaktif', p.aktif ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600')], ['Aksi', p => WRITE() ? BTN('Ubah', `H(editPegawai,'${p.id}')`) + ' ' + BTN('Hapus', `H(hapusPegawai,'${p.id}')`, 'd') : '']], PG)));
 };
-async function editPegawai(id) { const cur = PG.find(p => p.id === id), r = await formDlg(cur ? 'Ubah Pegawai' : 'Tambah Pegawai', PEG_F, cur || { aktif: true }, { save: v => A('apiKrPegawaiSave', cur ? Object.assign(v, { id: id }) : v) }); if (!r) return; toast(r.message); await MODS.pegawai(); }
+async function editPegawai(id) { const cur = PG.find(p => p.id === id), r = await formDlg(cur ? 'Ubah Pegawai' : 'Tambah Pegawai', PEG_F, cur || { aktif: true }, { save: v => A('apiKrPegawaiSave', Object.assign(v, { unit: U() }, cur ? { id: id } : {})) }); if (!r) return; toast(r.message); await MODS.pegawai(); }
 async function hapusPegawai(id) { if (!(await confirmDlg('Hapus pegawai ini?'))) return; const r = await A('apiKrPegawaiDelete', id); toast(r.message); await MODS.pegawai(); }
 
 /* ---------- Sensus, DPJP, BOR ---------- */

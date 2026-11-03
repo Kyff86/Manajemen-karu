@@ -402,41 +402,283 @@ const MODS = {};
 MODS.dash = async function () {
   const [d, j, n] = await Promise.all([A('apiKrDashboard', U()), A('apiKrJadwalHariIni', today(), U()), AQ('apiKrNotifikasi', U()).catch(() => ({ items: [], jumlah: 0 }))]);
   const sh = j.shift, rs = d.insiden_rs, mx = rs ? Math.max.apply(null, rs.tren.map(t => t.jumlah).concat([1])) : 1;
-  const forma = Object.keys(sh).filter(k => k !== 'L').map(k => `<div class="mb-2"><p class="text-[11px] font-bold text-text-secondary">${esc(sh[k].nama)} <span class="font-normal">${esc(sh[k].mulai)}${sh[k].mulai ? '–' : ''}${esc(sh[k].selesai)}</span></p><p class="text-xs">${j.formasi[k].length ? j.formasi[k].map(p => esc(p.nama)).join(', ') : '<span class="text-text-muted">-</span>'}</p></div>`).join('');
+  const forma = Object.keys(sh).filter(k => ['L', 'I', 'K'].indexOf(k) < 0).map(k => `<div class="mb-2"><p class="text-[11px] font-bold text-text-secondary">${esc(sh[k].nama)} <span class="font-normal">${esc(sh[k].mulai)}${sh[k].mulai ? '–' : ''}${esc(sh[k].selesai)}</span></p><p class="text-xs">${j.formasi[k].length ? j.formasi[k].map(p => esc(p.nama)).join(', ') : '<span class="text-text-muted">-</span>'}</p></div>`).join('');
   view(head('Dashboard Ruangan') + `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${kpi('groups', '#166534', d.pegawai, 'Pegawai aktif', d.unit)}${kpi('badge', '#0369a1', j.dinas_hari_ini, 'Dinas hari ini', fmtD(today()))}${kpi('bed', '#7c3aed', d.bor && d.bor.bor_persen != null ? d.bor.bor_persen + '%' : '-', 'BOR bulan ini', d.bor ? 'TT: ' + d.bor.tempat_tidur : 'belum ada sensus')}${kpi('fact_check', '#d97706', d.supervisi.rata_skor != null ? d.supervisi.rata_skor + '%' : '-', 'Skor supervisi', d.supervisi.jumlah + ' supervisi bulan ini')}${kpi('monitoring', '#0f766e', d.indikator.terkirim_bulan_ini, 'Indikator terkirim', d.indikator.hari_terisi + ' hari terisi')}${kpi('task_alt', '#dc2626', d.rtl ? d.rtl.terbuka : 0, 'RTL terbuka', (d.rtl ? d.rtl.terlambat : 0) + ' terlambat')}${kpi('description', '#166534', d.sop ? d.sop.total : '-', 'SOP ruangan', (d.sop ? d.sop.kadaluarsa : 0) + ' perlu ditinjau')}${kpi('report', '#b91c1c', rs ? rs.total : '-', 'Insiden seluruh RS', rs ? 'ruangan Anda: ' + rs.total_ruangan_anda : 'data KMKP')}</div>
   <div class="grid lg:grid-cols-2 gap-4 mt-4">${card('Formasi dinas hari ini', forma)}${card('Notifikasi (' + n.jumlah + ')', n.items.length ? n.items.slice(0, 5).map(x => `<button type="button" onclick="H(go,'${esc(x.tab)}')" class="w-full text-left py-2 border-t first:border-t-0 border-border-subtle"><p class="text-xs font-semibold ${x.tingkat === 'bahaya' ? 'text-red-600' : x.tingkat === 'peringatan' ? 'text-amber-700' : 'text-text-primary'}">${esc(x.judul)}</p><p class="text-[11px] text-text-muted">${esc(x.detail)}</p></button>`).join('') : empty('Tidak ada pemberitahuan.'))}</div>
   ${rs ? card('Laporan insiden seluruh rumah sakit (6 bulan terakhir)', `<div class="flex items-end gap-2 h-32">${rs.tren.map(t => `<div class="flex-1 flex flex-col items-center justify-end h-full"><span class="text-[10px] font-bold">${t.jumlah}</span><div class="w-full rounded-t bg-primary" style="height:${Math.round(t.jumlah / mx * 100)}%;min-height:2px"></div><span class="text-[9px] text-text-muted mt-1">${esc(t.bulan)}</span></div>`).join('')}</div>`, 'mt-4') : ''}`);
 };
 
 /* ---------- Jadwal dinas ---------- */
+/* Tampilan mengikuti contoh Excel RSUD Merauke: kop, grid warna per tanggal, kolom JML LEPAS, tanda tangan.
+   Warna shift dapat diubah di JDC. Pegawai diambil dari menu Pegawai, jadwal disimpan lewat apiKrJadwalSet. */
 const SHC = { P: 'bg-sky-100 text-sky-800', S: 'bg-amber-100 text-amber-800', M: 'bg-indigo-100 text-indigo-800', L: 'bg-slate-200 text-slate-700' };
+const JDC = { P: { bg: '#16a34a', fg: '#ffffff' }, S: { bg: '#facc15', fg: '#422006' }, M: { bg: '#2563eb', fg: '#ffffff' }, L: { bg: '#dc2626', fg: '#ffffff' }, I: { bg: '#f97316', fg: '#ffffff' }, K: { bg: '#9333ea', fg: '#ffffff' } };
+const JDK = ['P', 'S', 'M', 'L', 'I', 'K'], JDN = { P: 'Pagi', S: 'Siang', M: 'Malam', L: 'Libur', I: 'Ijin', K: 'Sakit' }, JDX = { L: 1, I: 1, K: 1 };
 let JD = null;
+const jdKey = (d, pid) => JD.bulan + '-' + pad2(d) + '|' + pid;
+const jdDirty = () => !!JD && (Object.keys(JD.cells).some(k => JD.cells[k] !== JD.orig[k]) || Object.keys(JD.orig).some(k => !(k in JD.cells)));
+const jdCount = pid => { let c = 0; for (let d = 1; d <= JD.n; d++) { const s = JD.cells[jdKey(d, pid)]; if (s === 'I' || s === 'K') c++; } return c || ''; };
+function jdCss() {
+  if (document.getElementById('jd-css')) return;
+  const s = document.createElement('style'); s.id = 'jd-css';
+  s.textContent = `
+#jd-sheet{--jf:Inter,sans-serif;--jh:'Plus Jakarta Sans',Inter,sans-serif;background:#fff;color:#0f172a;padding:18px 16px 14px;font-family:var(--jf)}
+.jd-hd{text-align:center;padding-bottom:10px;border-bottom:3px double #14532d}
+.jd-hd b{display:block;font:800 17px/1.25 var(--jh);letter-spacing:.6px;color:#14532d}
+.jd-hd em{display:block;font:500 11.5px/1.5 var(--jf);color:#475569;font-style:normal;margin-top:2px}
+.jd-ti{text-align:center;font:800 14px var(--jh);letter-spacing:1.2px;color:#0f172a;margin-top:14px}
+.jd-bl{text-align:center;margin:8px 0 14px}.jd-bl span{display:inline-block;font:700 11px var(--jf);letter-spacing:1.8px;color:#14532d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:999px;padding:4px 16px}
+.jd-wrap{overflow-x:auto;padding-bottom:4px}
+.jd-t{border-collapse:separate;border-spacing:0;font:500 11px var(--jf);margin:0 auto;border:1px solid #94a3b8;box-shadow:0 1px 3px rgba(15,23,42,.1)}
+.jd-t th,.jd-t td{padding:0;text-align:center;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0}
+.jd-t thead th{background:#14532d;color:#fff;font:700 10px var(--jf);letter-spacing:.7px;height:26px;padding:0 4px;border-right:1px solid rgba(255,255,255,.2);border-bottom:1px solid rgba(255,255,255,.2)}
+.jd-t thead tr+tr th{background:#166534}.jd-t thead tr+tr th.jd-d{font:700 11px var(--jf);letter-spacing:0;min-width:26px;padding:0}
+.jd-t thead th.jd-sun{background:#b91c1c}
+.jd-t thead th.jd-no,.jd-t thead th.jd-nm{background:#14532d;z-index:3}
+.jd-t .jd-no{position:sticky;left:0;z-index:2;background:#fff;min-width:30px;color:#64748b;font:600 10.5px var(--jf)}
+.jd-t .jd-nm{position:sticky;left:30px;z-index:2;background:#fff;text-align:left;padding:0 10px;white-space:nowrap;min-width:230px;font:600 11.5px var(--jf);color:#0f172a}
+.jd-t thead th.jd-nm{text-align:center;padding:0 10px;color:#fff;font:700 10px var(--jf)}
+.jd-t thead th.jd-no{color:#fff;font:700 10px var(--jf)}
+.jd-t tbody tr:nth-child(even) td{background:#f8fafc}
+.jd-t tbody tr:hover td.jd-no,.jd-t tbody tr:hover td.jd-nm{background:#f0fdf4}
+.jd-t .jd-c{width:26px;min-width:26px;height:27px;font:700 11px var(--jf);font-size:0;user-select:none;-webkit-user-select:none}
+.jd-t .jd-c.jd-f{border-right-color:rgba(255,255,255,.65);border-bottom-color:rgba(255,255,255,.65)}
+.jd-t .jd-c.jd-x,.jd-ltr .jd-t .jd-c{font-size:11px}
+.jd-t td.jd-jm{min-width:84px;font:800 12px var(--jf);color:#9a3412}.jd-t td.jd-jm:not(:empty){background:#fff7ed}
+.jd-t th.jd-jh{min-width:84px;white-space:nowrap;padding:0 6px}
+.jd-t tbody tr.jd-cv td{background:#f1f5f9;font:700 10px var(--jf);color:#334155;height:23px}
+.jd-t tbody tr.jd-cv td.jd-nm{font:700 10.5px var(--jf);color:#334155}
+.jd-t tbody tr.jd-cv:nth-last-child(3) td{border-top:2px solid #14532d}
+.jd-t tr.jd-cv i,.jd-lg i{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:0;margin-right:7px}
+.jd-edit .jd-c{cursor:crosshair}.jd-edit .jd-c:hover{outline:2px solid #14532d;outline-offset:-2px}
+.jd-edit [data-col],.jd-edit [data-row]{cursor:pointer}.jd-edit thead [data-col]:hover{background:#15803d}.jd-edit [data-row]:hover{background:#dcfce7!important}
+.jd-lgd{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:14px;font:500 10.5px var(--jf);color:#334155}
+.jd-lg{display:inline-flex;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:3px 11px 3px 9px}.jd-lg i{border-radius:3px;margin-right:6px}.jd-lg b{margin-right:4px}
+.jd-sg{display:flex;justify-content:space-between;gap:20px;font:500 11.5px/1.6 var(--jf);text-align:center;margin:24px 48px 2px;color:#0f172a}
+.jd-ln{border-bottom:1px solid #0f172a;width:200px;margin:46px auto 3px}.jd-sg small{font-size:10px;color:#64748b}
+.jd-rk{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;font:500 12px Inter,sans-serif;color:#0f172a}
+.jd-rk th{background:#14532d;color:#fff;font:700 10.5px Inter,sans-serif;letter-spacing:.7px;text-transform:uppercase;padding:11px 12px;text-align:center;white-space:nowrap}
+.jd-rk th:first-child{border-top-left-radius:10px}.jd-rk th:last-child{border-top-right-radius:10px}
+.jd-rk td{padding:9px 12px;border-bottom:1px solid #eef2f6;text-align:center;font-variant-numeric:tabular-nums}
+.jd-rk td.jd-rn{text-align:left;font-weight:600}.jd-rk td.jd-rno{color:#94a3b8;font-weight:600;width:34px}
+.jd-rk tbody tr:nth-child(even) td{background:#f8fafc}.jd-rk tbody tr:hover td{background:#f0fdf4}
+.jd-rk .jd-z{color:#cbd5e1}
+.jd-ch{display:inline-block;min-width:28px;padding:2px 9px;border-radius:999px;font:700 11px Inter,sans-serif}
+.jd-tj{display:flex;align-items:center;gap:10px;min-width:150px}.jd-tj b{min-width:34px;text-align:right;font-weight:800}
+.jd-br{flex:1;height:6px;border-radius:99px;background:#e2e8f0;overflow:hidden}.jd-br i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4ade80,#14532d)}
+.jd-rk tfoot td{background:#f0fdf4;font-weight:800;border-top:2px solid #14532d;border-bottom:0;padding:11px 12px}
+.jd-rk tfoot td:first-child{border-bottom-left-radius:10px}.jd-rk tfoot td:last-child{border-bottom-right-radius:10px}
+.jd-b{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:8px;font:600 11px Inter,sans-serif;border:1px solid #14532d;color:#14532d;background:#fff;white-space:nowrap;cursor:pointer}
+.jd-b .material-symbols-outlined{font-size:16px}
+.jd-b:hover:not(:disabled){background:#f0fdf4}.jd-b:disabled{opacity:.45;cursor:not-allowed}
+.jd-b.jd-p{background:#14532d;color:#fff}.jd-b.jd-p:hover:not(:disabled){background:#166534}
+.jd-b.jd-ok{background:#166534;color:#fff}.jd-b.jd-dg{border-color:#fca5a5;color:#dc2626}.jd-b.jd-dg:hover:not(:disabled){background:#fef2f2}
+.jd-b.jd-dot span:last-child::after{content:" \\2022"}
+.jd-tb{background:#f8faf9;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.jd-pal,.jd-tools{display:flex;flex-wrap:wrap;gap:6px}.jd-tools{margin-top:8px}
+.jd-sw{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid #cbd5e1;border-radius:999px;background:#fff;font:600 11px Inter,sans-serif;cursor:pointer}
+.jd-sw i{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.35)}
+.jd-sw kbd{font:700 9px ui-monospace,monospace;background:#f1f5f9;border-radius:4px;padding:1px 4px;color:#475569}
+.jd-sw.jd-on{border-color:#14532d;box-shadow:0 0 0 2px #14532d;background:#f0fdf4}
+.jd-hint{font:11px Inter,sans-serif;color:#64748b;margin-top:8px;line-height:1.5}
+.jd-bn{background:#fffbeb;border:1px solid #fcd34d;color:#78350f;border-radius:12px;padding:10px 12px;font:12px/1.5 Inter,sans-serif;margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.jd-in{padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font:12px Inter,sans-serif;margin-bottom:12px}
+.jd-yg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.jd-mc{border:1px solid #e2e8f0;border-radius:10px;padding:8px;font:12px Inter,sans-serif;display:flex;flex-direction:column;gap:6px;background:#fff}
+.jd-mc.jd-cur{border-color:#14532d;box-shadow:0 0 0 1px #14532d}.jd-mc em{color:#94a3b8;font-size:11px}
+.jd-mc button{border:1px solid #14532d;color:#14532d;background:#fff;border-radius:6px;padding:4px 6px;font:600 10px Inter,sans-serif;cursor:pointer;text-align:left}
+.jd-mc button[data-t=arsip]{background:#14532d;color:#fff}
+.jd-chk{display:inline-flex;align-items:center;gap:6px;font:11px Inter,sans-serif;color:#475569;margin-bottom:8px}
+@media print{body.jd-print .jd-wrap{overflow:visible!important}
+body.jd-print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.jd-print #jd-sheet{padding:0;font-size:12px}
+body.jd-print .jd-c:hover{outline:none!important}body.jd-print .jd-t .jd-no,body.jd-print .jd-t .jd-nm{position:static!important}}`;
+  document.head.appendChild(s);
+  addEventListener('pointerup', jdEnd); addEventListener('pointercancel', jdEnd); addEventListener('keydown', jdKb);
+}
 MODS.jadwal = async function (b) {
   b = typeof b === 'string' && /^\d{4}-\d{2}$/.test(b) ? b : (JD && JD.bulan) || bln();
-  const [pg, jd, rk] = await Promise.all([A('apiKrPegawaiList', U()), A('apiKrJadwalList', b, U()), A('apiKrJadwalRekap', b, U())]);
+  if (JD && (JD.bulan !== b || JD.u !== U()) && jdDirty() && !(await confirmDlg('Ada perubahan jadwal yang belum disimpan dan akan hilang. Lanjutkan?'))) { drawJadwal(); return; }
+  jdCss();
+  const pv = JD || {}, [pg, jd, rk] = await Promise.all([A('apiKrPegawaiList', U()), A('apiKrJadwalList', b, U()), A('apiKrJadwalRekap', b, U())]);
   const cells = {}; jd.items.forEach(i => { cells[i.tanggal + '|' + i.pegawai_id] = i.shift; });
-  JD = { bulan: b, peg: pg.items.filter(p => p.aktif), cells: cells, orig: Object.assign({}, cells), shift: jd.shift, rekap: rk.items }; drawJadwal();
+  JD = { bulan: b, n: new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)), 0).getDate(), unit: jd.unit || '', u: U(), peg: pg.items.filter(p => p.aktif), cells: cells, orig: Object.assign({}, cells), shift: jd.shift || {}, rekap: rk.items,
+    edit: !!pv.edit, brush: pv.brush || 'P', letters: !!pv.letters, hist: [], drag: null, arsip: null, print: pv.print || null };
+  drawJadwal();
 };
-function drawJadwal() {
-  const b = JD.bulan, n = new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)), 0).getDate(), dirty = Object.keys(JD.cells).some(k => JD.cells[k] !== JD.orig[k]) || Object.keys(JD.orig).some(k => !(k in JD.cells));
-  const days = Array.from({ length: n }, (_, i) => i + 1), dow = d => new Date(Number(b.slice(0, 4)), Number(b.slice(5, 7)) - 1, d).getDay();
-  const grid = JD.peg.length ? `<div class="overflow-x-auto"><table class="text-[11px] border-collapse"><thead><tr><th class="p-1 text-left sticky left-0 bg-white z-10 min-w-[130px]">Pegawai</th>${days.map(d => `<th class="p-1 w-8 text-center ${dow(d) === 0 ? 'text-red-600' : ''}">${d}<br><span class="font-normal text-[9px]">${'MSSRKJS'.charAt(dow(d))}</span></th>`).join('')}</tr></thead><tbody>${JD.peg.map(p => `<tr class="border-t border-border-subtle"><td class="p-1 sticky left-0 bg-white z-10 font-semibold whitespace-nowrap">${esc(p.nama)}</td>${days.map(d => { const k = b + '-' + pad2(d), s = JD.cells[k + '|' + p.id] || ''; return `<td class="p-0.5 text-center"><button type="button" ${WRITE() ? `onclick="cycShift('${k}','${p.id}')"` : 'disabled'} aria-label="${esc(p.nama)} tanggal ${d}" class="w-7 h-7 rounded text-[10px] font-bold ${s ? SHC[s] : 'border border-dashed border-border-form text-text-muted'}">${s || '·'}</button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>` : empty('Tambahkan pegawai terlebih dahulu di menu Pegawai.');
-  const leg = Object.keys(JD.shift).map(k => `<span class="mr-3">${badge(k, SHC[k])} ${esc(JD.shift[k].nama)} ${esc(JD.shift[k].mulai)}${JD.shift[k].mulai ? '–' : ''}${esc(JD.shift[k].selesai)}</span>`).join('');
-  view(head('Jadwal Dinas', monthInput('jd-bulan', b, 'MODS.jadwal') + (WRITE() ? BTN('Tukar Dinas', 'H(tukarDinas)') + BTN('Simpan Perubahan' + (dirty ? ' •' : ''), 'H(simpanJadwal)', 'p') : '')) + readOnlyNote() + card('', `<p class="text-[11px] mb-2">${leg}</p><p class="text-[10px] text-text-muted mb-2">${WRITE() ? 'Ketuk sel untuk mengganti shift: kosong → P → S → M → L → kosong. Lalu tekan Simpan Perubahan.' : ''}</p>${grid}`) + card('Rekap jam kerja ' + BLN[Number(b.slice(5, 7)) - 1] + ' ' + b.slice(0, 4), tbl([['Pegawai', r => esc(r.nama)], ['Pagi', r => r.P], ['Siang', r => r.S], ['Malam', r => r.M], ['Lepas', r => r.L], ['Total jam', r => `<b>${r.jam}</b>`]], JD.rekap), 'mt-4'));
+function jdCell(k, s) { return `<td class="jd-c${s ? ' jd-f' : ''}${JDX[s] ? ' jd-x' : ''}" data-k="${esc(k)}"${s ? ` style="background:${JDC[s].bg};color:${JDC[s].fg}"` : ''}>${s}</td>`; }
+function jdSheet(ed) {
+  const b = JD.bulan, y = Number(b.slice(0, 4)), m = Number(b.slice(5, 7)), n = JD.n, HN = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const days = Array.from({ length: n }, (_, i) => i + 1), dow = d => new Date(y, m - 1, d).getDay();
+  const th = days.map(d => `<th class="jd-d${dow(d) === 0 ? ' jd-sun' : ''}"${ed ? ` data-col="${d}"` : ''} title="${HN[dow(d)]} ${d}">${d}</th>`).join('');
+  const rows = JD.peg.map((p, i) => `<tr><td class="jd-no">${i + 1}</td><td class="jd-nm"${ed ? ` data-row="${esc(p.id)}" title="Klik untuk mengisi satu baris"` : ''}>${esc(p.nama)}</td>${days.map(d => { const k = jdKey(d, p.id); return jdCell(k, JD.cells[k] || ''); }).join('')}<td class="jd-jm" data-rt="${esc(p.id)}">${jdCount(p.id)}</td></tr>`).join('');
+  const cv = ['P', 'S', 'M'].map(k => `<tr class="jd-cv"><td class="jd-no"></td><td class="jd-nm"><i style="background:${JDC[k].bg}"></i>Jumlah dinas ${JDN[k]}</td>${days.map(d => `<td data-cv="${k}|${d}"></td>`).join('')}<td></td></tr>`).join('');
+  const lg = JDK.map(k => { const sf = JD.shift[k] || {}; return `<span class="jd-lg"><i style="background:${JDC[k].bg}"></i><b>${k}</b> = ${JDN[k]}${sf.mulai ? ' (' + esc(sf.mulai) + '–' + esc(sf.selesai) + ')' : ''}</span>`; }).join('') + `<span class="jd-lg"><i style="background:#dc2626"></i>Tanggal merah pada judul = hari Minggu</span>`;
+  const unit = String(JD.unit || (S.user && S.user.ruangan) || '').toUpperCase();
+  return `<div id="jd-sheet" class="${ed ? 'jd-edit' : ''} ${JD.letters ? 'jd-ltr' : ''}">
+<div class="jd-hd"><b>RUMAH SAKIT UMUM DAERAH MERAUKE</b><em>Jl. Sukarjo Wiryopranoto Merauke · Telp. (0971) 321124-321125</em></div>
+<div class="jd-ti">JADWAL DINAS PERAWAT — RUANGAN ${esc(unit)}</div><div class="jd-bl"><span>${BLN[m - 1].toUpperCase()} ${y}</span></div>
+<div class="jd-wrap"><table class="jd-t"><thead><tr><th class="jd-no" rowspan="2">NO</th><th class="jd-nm" rowspan="2">NAMA PERAWAT</th><th colspan="${n}">TANGGAL</th><th class="jd-jh">JUMLAH</th></tr><tr>${th}<th class="jd-jh">IJIN/SAKIT</th></tr></thead><tbody>${rows}${cv}</tbody></table></div>
+<div class="jd-lgd">${lg}</div>
+<div class="jd-sg"><div>Mengetahui,<br>Kepala Bidang Keperawatan<div class="jd-ln"></div><small>Nama &amp; NIP</small></div><div>Merauke, ....................... ${y}<br>Kepala Ruangan ${esc(JD.unit || '')}<div class="jd-ln"></div><small>Nama &amp; NIP</small></div></div></div>`;
 }
-function cycShift(tgl, pid) { const k = tgl + '|' + pid, o = ['', 'P', 'S', 'M', 'L'], n = o[(o.indexOf(JD.cells[k] || '') + 1) % o.length]; if (n) JD.cells[k] = n; else delete JD.cells[k]; drawJadwal(); }
+function drawJadwal() {
+  const arc = !!JD.arsip, W = WRITE() && !arc, ed = JD.edit && W, dirty = jdDirty(), y = JD.bulan.slice(0, 4), m = Number(JD.bulan.slice(5, 7));
+  const jb = (l, ic, on, k, x) => `<button type="button" onclick="${on}" class="jd-b ${k || ''}" ${x || ''}><span class="material-symbols-outlined">${ic}</span><span>${l}</span></button>`;
+  const acts = monthInput('jd-bulan', JD.bulan, 'MODS.jadwal')
+    + (arc ? jb('Kembali ke Jadwal Aktif', 'event_available', 'H(jdAktif)', 'jd-p') : '')
+    + (W ? jb(ed ? 'Selesai Edit' : 'Edit Jadwal', ed ? 'check' : 'edit', 'H(jdToggle)', ed ? 'jd-ok' : 'jd-p') : '')
+    + (W && (ed || dirty) ? jb('Simpan', 'save', 'H(simpanJadwal)', 'jd-p' + (dirty ? ' jd-dot' : ''), 'id="jd-save"' + (dirty ? '' : ' disabled')) : '')
+    + (W ? jb('Tukar Dinas', 'swap_horiz', 'H(tukarDinas)') + jb('Arsipkan', 'inventory_2', 'H(jdArsipkan)') : '')
+    + jb('Riwayat', 'history', 'H(jdRiwayat)') + jb('Cetak', 'print', 'H(jdCetak)') + jb('Unduh Excel', 'download', 'H(jdCsv)');
+  const sw = k => `<button type="button" data-b="${k}" onclick="H(jdBrush,'${k}')" class="jd-sw${JD.brush === k ? ' jd-on' : ''}"><i style="background:${k === '-' ? '#fff' : JDC[k].bg}"></i>${k === '-' ? 'Hapus' : JDN[k]}<kbd>${k === '-' ? 'X' : k}</kbd></button>`;
+  const tb = ed ? `<div class="jd-tb no-print"><div class="jd-pal" role="group" aria-label="Pilih shift">${JDK.concat(['-']).map(sw).join('')}</div>
+<div class="jd-tools">${jb('Urungkan', 'undo', 'H(jdUndo)', '', 'id="jd-undo"' + (JD.hist.length ? '' : ' disabled'))}${jb('Isi Pola', 'auto_fix_high', 'H(jdPola)')}${jb('Salin Bulan Lalu', 'content_copy', 'H(jdSalin)')}${jb('Kosongkan Bulan', 'delete_sweep', 'H(jdKosong)', 'jd-dg')}</div>
+<p class="jd-hint">Pilih shift, lalu klik atau seret di grid. Klik nomor tanggal untuk mengisi satu kolom, klik nama untuk mengisi satu baris. Pintasan: P S M L I K, X = hapus, Ctrl+Z = urungkan. Kode: L = Libur, I = Ijin, K = Sakit (I dan K dihitung di kolom Jumlah Ijin/Sakit). Tekan <b>Simpan</b> bila selesai.</p></div>` : '';
+  const bn = arc ? `<div class="jd-bn no-print"><span class="material-symbols-outlined">inventory_2</span><span>Anda melihat <b>arsip</b> jadwal ${BLN[m - 1]} ${y}, disimpan ${esc(JD.arsip.dibuat)} oleh ${esc(JD.arsip.oleh)}. Tampilan ini tetap sama walau data pegawai berubah dan hanya untuk dilihat.</span></div>` : '';
+  view(head('Jadwal Dinas', acts) + readOnlyNote() + bn + tb
+    + card('', `<label class="jd-chk no-print"><input type="checkbox" ${JD.letters ? 'checked' : ''} onchange="H(jdLetters,this.checked)"> Tampilkan huruf shift di dalam kotak</label>` + (JD.peg.length ? jdSheet(ed) : empty('Tambahkan pegawai terlebih dahulu di menu Pegawai.')))
+    + card('Rekap jam kerja ' + BLN[m - 1] + ' ' + y, jdRekapHtml(JD.rekap), 'mt-4 no-print'));
+  jdBind(); jdSums();
+}
+function jdRekapHtml(rows) {
+  if (!rows || !rows.length) return empty('Belum ada data rekap.');
+  const CH = { P: ['#dcfce7', '#166534'], S: ['#fef9c3', '#854d0e'], M: ['#dbeafe', '#1e40af'], L: ['#fee2e2', '#991b1b'], I: ['#ffedd5', '#9a3412'], K: ['#f3e8ff', '#6b21a8'] }, mx = Math.max.apply(null, rows.map(r => r.jam).concat([1])), tot = { P: 0, S: 0, M: 0, L: 0, I: 0, K: 0, jam: 0 };
+  const chip = (k, v) => v ? `<span class="jd-ch" style="background:${CH[k][0]};color:${CH[k][1]}">${v}</span>` : '<span class="jd-z">–</span>';
+  const body = rows.map((r, i) => { Object.keys(tot).forEach(k => { tot[k] += Number(r[k]) || 0; });
+    return `<tr><td class="jd-rno">${i + 1}</td><td class="jd-rn">${esc(r.nama)}</td>${JDK.map(k => `<td>${chip(k, r[k] || 0)}</td>`).join('')}<td><div class="jd-tj"><b>${r.jam}</b><span class="jd-br"><i style="width:${Math.round(r.jam / mx * 100)}%"></i></span></div></td></tr>`; }).join('');
+  return `<div style="overflow-x:auto"><table class="jd-rk"><thead><tr><th>No</th><th style="text-align:left">Nama Perawat</th>${JDK.map(k => `<th>${JDN[k]}</th>`).join('')}<th>Total Jam</th></tr></thead><tbody>${body}</tbody><tfoot><tr><td></td><td class="jd-rn">Total ruangan</td>${JDK.map(k => `<td>${tot[k]}</td>`).join('')}<td><div class="jd-tj"><b>${tot.jam}</b></div></td></tr></tfoot></table></div>`;
+}
+function jdBind() {
+  const el = $('jd-sheet'); if (!el) return;
+  el.onpointerdown = el.onpointerover = null; if (!(JD.edit && WRITE())) return;
+  el.onpointerdown = e => {
+    if (e.button) return;
+    const c = e.target.closest('td.jd-c'); if (c) { e.preventDefault(); JD.drag = []; jdPaint(c); return; }
+    const h = e.target.closest('[data-col]'); if (h) { jdBulk(JD.peg.map(p => jdKey(Number(h.dataset.col), p.id))); return; }
+    const r = e.target.closest('[data-row]'); if (r) jdBulk(Array.from({ length: JD.n }, (_, i) => jdKey(i + 1, r.dataset.row)));
+  };
+  el.onpointerover = e => { if (!JD.drag || !(e.buttons & 1)) return; const c = e.target.closest('td.jd-c'); if (c) jdPaint(c); };
+}
+function jdPutTd(k) {
+  const td = document.querySelector('#jd-sheet td[data-k="' + k + '"]'); if (!td) return; const s = JD.cells[k] || '';
+  td.textContent = s; td.className = 'jd-c' + (s ? ' jd-f' : '') + (JDX[s] ? ' jd-x' : ''); td.style.background = s ? JDC[s].bg : ''; td.style.color = s ? JDC[s].fg : '';
+}
+function jdSetCell(k, v, stroke) {
+  const o = JD.cells[k] || ''; if (o === v) return false; stroke.push([k, o]); if (v) JD.cells[k] = v; else delete JD.cells[k]; jdPutTd(k); return true;
+}
+function jdPaint(c) { if (jdSetCell(c.dataset.k, JD.brush === '-' ? '' : JD.brush, JD.drag)) jdSums(); }
+function jdBulk(keys) { const st = []; keys.forEach(k => jdSetCell(k, JD.brush === '-' ? '' : JD.brush, st)); if (st.length) JD.hist.push(st); jdSums(); }
+function jdEnd() { if (JD && JD.drag) { if (JD.drag.length) { JD.hist.push(JD.drag); jdSums(); } JD.drag = null; } }
+function jdSums() {
+  document.querySelectorAll('#jd-sheet [data-rt]').forEach(e => { e.textContent = jdCount(e.dataset.rt); });
+  document.querySelectorAll('#jd-sheet [data-cv]').forEach(e => { const a = e.dataset.cv.split('|'); let c = 0; JD.peg.forEach(p => { if (JD.cells[jdKey(Number(a[1]), p.id)] === a[0]) c++; }); e.textContent = c || '–'; });
+  const sv = $('jd-save'), dt = jdDirty(); if (sv) { sv.disabled = !dt; sv.classList.toggle('jd-dot', dt); }
+  const un = $('jd-undo'); if (un) un.disabled = !JD.hist.length;
+}
+function jdKb(e) {
+  if (!JD || !JD.edit || !WRITE() || !$('jd-sheet') || e.altKey || /INPUT|SELECT|TEXTAREA/.test((e.target || {}).tagName || '') || document.querySelector('[role=dialog]')) return;
+  const k = String(e.key).toUpperCase();
+  if (e.ctrlKey || e.metaKey) { if (k === 'Z') { e.preventDefault(); jdUndo(); } return; }
+  if (k.length === 1 && 'PSMLIK'.indexOf(k) >= 0) jdBrush(k); else if (k === 'X' || k === 'DELETE') jdBrush('-');
+}
+function jdBrush(k) { JD.brush = k; document.querySelectorAll('[data-b]').forEach(b => b.classList.toggle('jd-on', b.dataset.b === k)); }
+function jdUndo() { const st = JD.hist.pop(); if (!st) return; st.slice().reverse().forEach(a => { if (a[1]) JD.cells[a[0]] = a[1]; else delete JD.cells[a[0]]; jdPutTd(a[0]); }); jdSums(); }
+function jdApply(ch) { const st = []; ch.forEach(a => jdSetCell(a[0], a[1], st)); if (st.length) JD.hist.push(st); jdSums(); return st.length; }
+function jdToggle() { JD.edit = !JD.edit; drawJadwal(); }
+function jdLetters(v) { JD.letters = !!v; drawJadwal(); }
+async function jdPola() {
+  const po = [['*', 'Semua pegawai']].concat(JD.peg.map(p => [p.id, p.nama]));
+  await formDlg('Isi Pola Jadwal', [{ k: 'pegawai', l: 'Pegawai', t: 'select', o: po }, { k: 'pola', l: 'Pola shift (P, S, M, L, I, K; tanda - = kosong)', r: 1 }, { k: 'mulai', l: 'Mulai tanggal', t: 'number', min: 1 },
+    { k: 'geser', l: 'Rotasi', t: 'checkbox', h: 'Geser pola satu langkah untuk tiap pegawai (bergantian)' }], { pegawai: '*', pola: 'P P S S M M L L', mulai: '1', geser: true }, {
+    ok: 'Terapkan', save: v => {
+      const pat = Array.from(v.pola.toUpperCase()).filter(c => 'PSMLIK-'.indexOf(c) >= 0); if (!pat.length) throw new Error('Pola tidak valid. Gunakan huruf P, S, M, L, I, K atau tanda -.');
+      const mulai = Math.min(Math.max(parseInt(v.mulai, 10) || 1, 1), JD.n), list = v.pegawai === '*' ? JD.peg : JD.peg.filter(p => p.id === v.pegawai), ch = [];
+      list.forEach((p, i) => { for (let d = mulai; d <= JD.n; d++) { const s = pat[(d - mulai + (v.geser && v.pegawai === '*' ? i : 0)) % pat.length]; ch.push([jdKey(d, p.id), s === '-' ? '' : s]); } });
+      jdApply(ch); toast('Pola diterapkan. Tekan Simpan untuk menyimpan.');
+    } });
+}
+async function jdSalin() {
+  const y = Number(JD.bulan.slice(0, 4)), m = Number(JD.bulan.slice(5, 7)), py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1, pv = py + '-' + pad2(pm);
+  if (!(await confirmDlg('Salin jadwal ' + BLN[pm - 1] + ' ' + py + ' ke bulan ini berdasarkan nomor tanggal? Sel yang terisi di bulan lalu akan menggantikan isi sel yang sama.'))) return;
+  const r = await A('apiKrJadwalList', pv, U()), ids = {}; JD.peg.forEach(p => { ids[p.id] = 1; });
+  const ch = []; r.items.forEach(i => { const d = Number(String(i.tanggal).slice(8, 10)); if (d >= 1 && d <= JD.n && ids[i.pegawai_id]) ch.push([jdKey(d, i.pegawai_id), i.shift]); });
+  if (!ch.length) { toast('Bulan lalu belum punya jadwal.', 'error'); return; }
+  jdApply(ch); toast(ch.length + ' sel disalin. Tekan Simpan untuk menyimpan.');
+}
+async function jdKosong() {
+  if (!(await confirmDlg('Kosongkan seluruh jadwal bulan ini? Perubahan baru tersimpan setelah Anda menekan Simpan.'))) return;
+  jdApply(Object.keys(JD.cells).map(k => [k, '']));
+}
+async function jdCetak() {
+  const v = await formDlg('Cetak Jadwal', [{ k: 'kertas', l: 'Ukuran kertas', t: 'select', o: [['A4', 'A4 (210 × 297 mm)'], ['F4', 'F4 / Folio (215 × 330 mm)']] }, { k: 'orientasi', l: 'Orientasi', t: 'select', o: [['landscape', 'Landscape / mendatar (disarankan)'], ['portrait', 'Portrait / tegak']] }], JD.print || { kertas: 'A4', orientasi: 'landscape' }, { ok: 'Cetak' });
+  if (!v) return; JD.print = v; jdCetakProses(v);
+}
+// Skala otomatis: lebar dan tinggi jadwal dihitung lalu dikecilkan agar muat satu halaman penuh (tidak terpotong).
+function jdCetakProses(v) {
+  const sh = $('jd-sheet'); if (!sh) { toast('Tidak ada jadwal untuk dicetak.', 'error'); return; }
+  const mm = x => x * 96 / 25.4, dim = v.kertas === 'F4' ? [215, 330] : [210, 297], land = v.orientasi !== 'portrait', pw = land ? dim[1] : dim[0], ph = land ? dim[0] : dim[1], mg = 8;
+  const pg = document.createElement('style'); pg.textContent = '@page{size:' + pw + 'mm ' + ph + 'mm;margin:' + mg + 'mm}'; document.head.appendChild(pg);
+  const saved = []; let n = sh;
+  while (n && n !== document.body) { const par = n.parentNode; if (!par) break; Array.from(par.children).forEach(c => { if (c !== n && !/^(STYLE|SCRIPT|LINK)$/.test(c.tagName) && getComputedStyle(c).display !== 'none') { saved.push([c, c.getAttribute('style')]); c.style.display = 'none'; } }); n = par; }
+  n = sh.parentNode; while (n && n.nodeType === 1) { saved.push([n, n.getAttribute('style')]); n.style.cssText += ';position:static!important;display:block!important;height:auto!important;min-height:0!important;max-height:none!important;width:auto!important;max-width:none!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:none!important;overflow:visible!important;transform:none!important'; n = n.parentNode; }
+  saved.push([sh, sh.getAttribute('style')]); document.body.classList.add('jd-print'); sh.style.cssText = 'width:max-content;margin:0 auto;zoom:1;position:static';
+  const w = sh.offsetWidth, h = sh.offsetHeight, z = Math.min(1, (mm(pw - 2 * mg) - 2) / w, (mm(ph - 2 * mg) - 6) / h);
+  sh.style.zoom = z.toFixed(4);
+  const off = () => { document.body.classList.remove('jd-print'); pg.remove(); saved.reverse().forEach(a => { if (a[1] == null) a[0].removeAttribute('style'); else a[0].setAttribute('style', a[1]); }); removeEventListener('afterprint', off); };
+  addEventListener('afterprint', off); setTimeout(() => window.print(), 120);
+}
+function jdCsv() {
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', row = a => a.map(q).join(','), days = Array.from({ length: JD.n }, (_, i) => i + 1), out = [];
+  out.push(row(['JADWAL DINAS PERAWAT', JD.unit, JD.bulan])); out.push(row(['NO', 'NAMA PERAWAT'].concat(days, ['JUMLAH IJIN/SAKIT'])));
+  JD.peg.forEach((p, i) => out.push(row([i + 1, p.nama].concat(days.map(d => JD.cells[jdKey(d, p.id)] || ''), [jdCount(p.id) || 0]))));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + out.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'Jadwal_' + String(JD.unit).replace(/[^\w]+/g, '_') + '_' + JD.bulan + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+}
 async function simpanJadwal() {
   const en = []; Object.keys(JD.cells).forEach(k => { if (JD.cells[k] !== JD.orig[k]) { const p = k.split('|'); en.push({ tanggal: p[0], pegawai_id: p[1], shift: JD.cells[k] }); } });
   Object.keys(JD.orig).forEach(k => { if (!(k in JD.cells)) { const p = k.split('|'); en.push({ tanggal: p[0], pegawai_id: p[1], shift: '' }); } });
   if (!en.length) { toast('Tidak ada perubahan.'); return; }
   for (let i = 0; i < en.length; i += 700) await A('apiKrJadwalSet', en.slice(i, i + 700));
-  toast('Jadwal tersimpan.'); await MODS.jadwal(JD.bulan);
+  JD.orig = Object.assign({}, JD.cells); JD.hist = []; toast('Jadwal tersimpan.'); await MODS.jadwal(JD.bulan);
 }
 async function tukarDinas() {
+  if (jdDirty()) { toast('Simpan perubahan jadwal terlebih dahulu sebelum tukar dinas.', 'error'); return; }
   const po = JD.peg.map(p => [p.id, p.nama]), r = await formDlg('Tukar Dinas', [{ k: 'pegawai_a', l: 'Pegawai A', t: 'select', o: po }, { k: 'tanggal_a', l: 'Tanggal A', t: 'date', r: 1 }, { k: 'pegawai_b', l: 'Pegawai B', t: 'select', o: po }, { k: 'tanggal_b', l: 'Tanggal B', t: 'date', r: 1 }], { tanggal_a: today(), tanggal_b: today() }, { save: v => A('apiKrTukarDinas', v) });
   if (!r) return; toast(r.message); await MODS.jadwal(JD.bulan);
 }
 
+
+/* ---------- Arsip & riwayat jadwal ---------- */
+const jdAktif = () => MODS.jadwal(JD.bulan);
+const jdBuka = (m, t) => t === 'arsip' ? jdBukaArsip(m) : MODS.jadwal(m);
+function jdRekapLokal() {
+  return JD.peg.map(p => { const r = { pegawai_id: p.id, nama: p.nama, P: 0, S: 0, M: 0, L: 0, I: 0, K: 0, jam: 0 };
+    for (let d = 1; d <= JD.n; d++) { const c = JD.cells[jdKey(d, p.id)]; if (c && r[c] != null) { r[c]++; r.jam += (JD.shift[c] && JD.shift[c].jam) || { P: 6, S: 7, M: 11 }[c] || 0; } } return r; });
+}
+async function jdArsipkan() {
+  if (jdDirty()) { toast('Simpan perubahan jadwal terlebih dahulu sebelum diarsipkan.', 'error'); return; }
+  if (!(await confirmDlg('Arsipkan jadwal ' + BLN[Number(JD.bulan.slice(5, 7)) - 1] + ' ' + JD.bulan.slice(0, 4) + '? Salinan tetap (termasuk nama pegawai saat ini) akan disimpan dan bisa dilihat di Riwayat. Jika sudah pernah diarsipkan, arsip lama diganti.'))) return;
+  const r = await A('apiKrJadwalArsipSimpan', JD.bulan); toast(r.message || 'Jadwal diarsipkan.');
+}
+async function jdBukaArsip(b) {
+  if (jdDirty() && !(await confirmDlg('Ada perubahan jadwal yang belum disimpan dan akan hilang. Lanjutkan?'))) return;
+  jdCss(); const r = await A('apiKrJadwalArsipGet', b, U()), cells = {};
+  r.peg.forEach(p => { for (let d = 1; d <= r.n; d++) { const c = p.s.charAt(d - 1); if (c && c !== '-' && c !== ' ') cells[b + '-' + pad2(d) + '|' + p.id] = c; } });
+  const pv = JD || {}; JD = { bulan: b, n: r.n, unit: r.unit, u: U(), peg: r.peg.map(p => ({ id: p.id, nama: p.nama })), cells: cells, orig: Object.assign({}, cells), shift: r.shift || {}, rekap: [], edit: false, brush: pv.brush || 'P', letters: !!pv.letters, hist: [], drag: null, arsip: { dibuat: r.dibuat, oleh: r.oleh }, print: pv.print || null };
+  JD.rekap = jdRekapLokal(); drawJadwal();
+}
+async function jdRiwayat() {
+  const r = await A('apiKrJadwalArsipList', U()), ars = {}, akt = {}, ys = {}; r.items.forEach(i => { ars[i.bulan] = i; }); (r.bulan_aktif || []).forEach(x => { akt[x] = 1; });
+  Object.keys(ars).concat(Object.keys(akt), [JD.bulan]).forEach(k => { ys[k.slice(0, 4)] = 1; }); const yl = Object.keys(ys).sort().reverse();
+  const grid = y => `<div class="jd-yg">${BLN.map((nm, i) => { const k = y + '-' + pad2(i + 1), a = ars[k];
+    return `<div class="jd-mc${k === JD.bulan ? ' jd-cur' : ''}"><b>${nm}</b>${a ? `<button type="button" data-m="${k}" data-t="arsip">Arsip · ${esc(String(a.dibuat).slice(0, 10))}</button>` : ''}${akt[k] ? `<button type="button" data-m="${k}" data-t="aktif">Jadwal aktif</button>` : ''}${!a && !akt[k] ? '<em>kosong</em>' : ''}</div>`; }).join('')}</div>`;
+  await dlg('Riwayat Jadwal Dinas — ' + (r.unit || ''), `<label class="jd-chk">Tahun</label><br><select id="jd-yr" class="jd-in">${yl.map(y => `<option ${y === JD.bulan.slice(0, 4) ? 'selected' : ''}>${y}</option>`).join('')}</select><div id="jd-yg">${grid(yl.indexOf(JD.bulan.slice(0, 4)) >= 0 ? JD.bulan.slice(0, 4) : yl[0])}</div><p class="jd-hint">Arsip = salinan tetap yang disimpan lewat tombol Arsipkan. Jadwal aktif = jadwal yang masih tersimpan di bulan tersebut dan bisa diedit.</p>`, {
+    ok: false, wide: true, open: w => {
+      w.querySelector('#jd-yr').onchange = e => { w.querySelector('#jd-yg').innerHTML = grid(e.target.value); };
+      w.addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; w.querySelector('[data-x]').click(); H(jdBuka, b.dataset.m, b.dataset.t); });
+    } });
+}
 /* ---------- Pegawai ---------- */
 let PG = [];
 const PEG_F = [{ k: 'nama', l: 'Nama lengkap', r: 1 }, { k: 'nip', l: 'NIP' }, { k: 'jabatan', l: 'Jabatan' }, { k: 'level_pk', l: 'Level PK', t: 'select', o: [['', '-'], ['PK I', 'PK I'], ['PK II', 'PK II'], ['PK III', 'PK III'], ['PK IV', 'PK IV'], ['PK V', 'PK V']] }, { k: 'aktif', l: 'Status', t: 'checkbox', h: 'Aktif' }];
